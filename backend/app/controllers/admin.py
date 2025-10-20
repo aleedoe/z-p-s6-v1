@@ -1,6 +1,6 @@
 from flask import jsonify
 from sqlalchemy.exc import SQLAlchemyError
-from ..models import db, Employee, DailySchedule, WorkSchedule, EmployeeSchedule
+from ..models import db, Employee, DailySchedule, WorkSchedule, EmployeeSchedule, Attendance
 
 def get_all_employees():
     try:
@@ -169,3 +169,76 @@ def get_work_schedule_by_id(id_schedule: int):
     except SQLAlchemyError as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+
+
+def get_all_attendance():
+    try:
+        # Join tabel attendance dengan employee
+        attendances = (
+            db.session.query(
+                Attendance.id.label("attendance_id"),
+                Employee.id.label("employee_id"),
+                Employee.name.label("employee_name"),
+                Employee.position.label("position"),
+                Attendance.date.label("attendance_date")
+            )
+            .join(Employee, Employee.id == Attendance.employee_id)
+            .order_by(Attendance.date.desc())
+            .all()
+        )
+
+        result = []
+        for a in attendances:
+            result.append({
+                "attendance_id": a.attendance_id,
+                "employee_id": a.employee_id,
+                "employee_name": a.employee_name,
+                "position": a.position,
+                "attendance_date": a.attendance_date.strftime("%Y-%m-%d %H:%M:%S")
+            })
+
+        return jsonify({
+            "total_attendance": len(result),
+            "attendances": result
+        }), 200
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+
+def get_attendance_by_id(attendance_id: int):
+    try:
+        # Join attendance dengan employee, dan filter berdasarkan id attendance
+        attendance = (
+            db.session.query(
+                Attendance.id.label("attendance_id"),
+                Employee.id.label("employee_id"),
+                Employee.name.label("employee_name"),
+                Employee.position.label("position"),
+                Attendance.date.label("attendance_date")
+            )
+            .join(Employee, Employee.id == Attendance.employee_id)
+            .filter(Attendance.id == attendance_id)
+            .first()
+        )
+
+        if not attendance:
+            return jsonify({"message": "Attendance record not found"}), 404
+
+        result = {
+            "attendance_id": attendance.attendance_id,
+            "employee_id": attendance.employee_id,
+            "employee_name": attendance.employee_name,
+            "position": attendance.position,
+            "attendance_date": attendance.attendance_date.strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+        return jsonify(result), 200
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
