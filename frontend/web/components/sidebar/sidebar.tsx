@@ -3,15 +3,12 @@
 import React from "react";
 import { Sidebar } from "./sidebar.styles";
 import { HomeIcon } from "../icons/sidebar/home-icon";
-import { ProductsIcon } from "../icons/sidebar/products-icon";
-import { ChangeLogIcon } from "../icons/sidebar/changelog-icon";
-import { ShoppingCartIcon } from "../icons/sidebar/shopping-cart-icon";
 import { SidebarItem } from "./sidebar-item";
 import { SidebarMenu } from "./sidebar-menu";
 import { useSidebarContext } from "../layoutD/layout-context";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
-import { AcmeLogo } from "../icons/acmelogo";
+// import { AcmeLogo } from "../icons/acmelogo";
 
 import {
   Modal,
@@ -21,6 +18,9 @@ import {
   ModalFooter,
   useDisclosure
 } from "@heroui/modal";
+import { UsersIcon } from "../icons/breadcrumb/users-icon";
+import { ReportsIcon } from "../icons/sidebar/reports-icon";
+import { CustomersIcon } from "../icons/sidebar/customers-icon";
 
 export const SidebarWrapper = () => {
   const pathname = usePathname();
@@ -50,9 +50,9 @@ export const SidebarWrapper = () => {
       >
         <div className={Sidebar.Header()}>
           <div className="flex items-center gap-2">
-            <AcmeLogo />
+            {/* <AcmeLogo /> */}
             <h3 className="text-xl font-medium m-0 text-default-900 whitespace-nowrap">
-              {"Instagram"}
+              {"Joglo Narto"}
             </h3>
           </div>
         </div>
@@ -66,22 +66,24 @@ export const SidebarWrapper = () => {
             />
             <SidebarMenu title="Main Menu">
               <SidebarItem
-                isActive={pathname === "/dashboard/products"}
-                title="Products"
-                icon={<ProductsIcon />}
-                href="/dashboard/products"
+                isActive={pathname === "/dashboard/employeeData"}
+                title="employee data"
+                icon={<UsersIcon />}
+                href="/dashboard/employeeData"
+              />
+            </SidebarMenu>
+            <SidebarMenu title="Attendance">
+              <SidebarItem
+                isActive={pathname === "/dashboard/attendanceSchedule"}
+                title="schedule"
+                icon={<ReportsIcon />}
+                href="/dashboard/attendanceSchedule"
               />
               <SidebarItem
-                isActive={pathname === "/dashboard/orders"}
-                title="Orders"
-                icon={<ShoppingCartIcon />}
-                href="/dashboard/orders"
-              />
-              <SidebarItem
-                isActive={pathname === "/dashboard/returns"}
-                title="Returns"
-                icon={<ChangeLogIcon />}
-                href="/dashboard/returns"
+                isActive={pathname === "/dashboard/attendanceData"}
+                title="data"
+                icon={<ReportsIcon />}
+                href="/dashboard/attendanceData"
               />
             </SidebarMenu>
           </div>
