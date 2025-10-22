@@ -1,50 +1,30 @@
 "use client"
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
-import { User } from "@heroui/user";
 import { Chip } from "@heroui/chip";
 import { Tooltip } from "@heroui/tooltip";
+import { Spinner } from "@heroui/spinner";
+import { Employee } from "@/types/api/employee";
+import { employeeService } from "@/services/employee.service";
 
 // Kolom tabel
 const columns = [
     { name: "NO", uid: "no" },
+    { name: "NIK", uid: "nik" },
     { name: "NAME", uid: "name" },
-    { name: "ROLE", uid: "role" },
-    { name: "STATUS", uid: "status" },
+    { name: "POSITION", uid: "position" },
+    { name: "GENDER", uid: "gender" },
     { name: "ACTIONS", uid: "actions" },
 ];
 
-// Data dummy (2 data saja)
-const users = [
-    {
-        id: 1,
-        name: "Tony Reichert",
-        role: "CEO",
-        team: "Management",
-        status: "active",
-        avatar: "https://i.pravatar.cc/150?u=a042581f4e29026024d",
-        email: "tony.reichert@example.com",
-    },
-    {
-        id: 2,
-        name: "Zoey Lang",
-        role: "Technical Lead",
-        team: "Development",
-        status: "paused",
-        avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-        email: "zoey.lang@example.com",
-    },
-];
-
-// Warna status
-const statusColorMap: Record<string, "success" | "danger" | "warning"> = {
-    active: "success",
-    paused: "danger",
-    vacation: "warning",
+// Warna gender (opsional)
+const genderColorMap: Record<string, "primary" | "secondary"> = {
+    Male: "primary",
+    Female: "secondary",
 };
 
-// Icon
+// Icons
 const EyeIcon = (props: any) => (
     <svg
         aria-hidden="true"
@@ -144,48 +124,99 @@ const DeleteIcon = (props: any) => (
 );
 
 const TableEmployeeData: React.FC = () => {
-    const renderCell = React.useCallback((user: any, columnKey: string, index: number) => {
-        const cellValue = user[columnKey];
+    const [employees, setEmployees] = useState<Employee[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // Fetch data dari API
+    useEffect(() => {
+        fetchEmployees();
+    }, []);
+
+    const fetchEmployees = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await employeeService.getAll();
+            setEmployees(response.employees);
+        } catch (err: any) {
+            setError(err.message || 'Failed to fetch employees');
+            console.error('Error fetching employees:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Handler untuk actions
+    const handleView = (employee: Employee) => {
+        console.log('View employee:', employee);
+        // Implementasi logic untuk view detail
+    };
+
+    const handleEdit = (employee: Employee) => {
+        console.log('Edit employee:', employee);
+        // Implementasi logic untuk edit
+    };
+
+    const handleDelete = async (employee: Employee) => {
+        if (window.confirm(`Are you sure you want to delete ${employee.name}?`)) {
+            try {
+                // await employeeService.delete(employee.id);
+                // Refresh data setelah delete
+                setEmployees(employees.filter(emp => emp.id !== employee.id));
+                console.log('Deleted employee:', employee);
+            } catch (err: any) {
+                alert(`Failed to delete employee: ${err.message}`);
+            }
+        }
+    };
+
+    const renderCell = React.useCallback((employee: Employee, columnKey: string, index: number) => {
+        const cellValue = employee[columnKey as keyof Employee];
 
         switch (columnKey) {
             case "no":
-                return <p>{index + 1}</p>;
+                return <p className="text-sm">{index + 1}</p>;
+            case "nik":
+                return <p className="text-sm font-semibold">{employee.nik}</p>;
             case "name":
                 return (
-                    <User
-                        avatarProps={{ radius: "lg", src: user.avatar }}
-                        description={user.email}
-                        name={cellValue}
-                    />
-                );
-            case "role":
-                return (
                     <div className="flex flex-col">
-                        <p className="text-bold text-sm capitalize">{cellValue}</p>
-                        <p className="text-bold text-sm text-default-400 capitalize">{user.team}</p>
+                        <p className="text-sm font-semibold">{employee.name}</p>
+                        <p className="text-xs text-default-400">{employee.email}</p>
                     </div>
                 );
-            case "status":
+            case "position":
                 return (
-                    <Chip className="capitalize" color={statusColorMap[user.status]} size="sm" variant="flat">
-                        {cellValue}
+                    <p className="text-sm font-medium capitalize">{employee.position}</p>
+                );
+            case "gender":
+                return (
+                    <Chip
+                        className="capitalize"
+                        color={genderColorMap[employee.gender] || "default"}
+                        size="sm"
+                        variant="flat"
+                    >
+                        {employee.gender}
                     </Chip>
                 );
             case "actions":
                 return (
                     <div className="relative flex justify-center gap-2">
-                        <Tooltip content="Details">
-                            <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
-                                <EyeIcon />
-                            </span>
-                        </Tooltip>
-                        <Tooltip content="Edit user">
-                            <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
+                        <Tooltip content="Edit employee">
+                            <span
+                                className="text-lg text-default-400 cursor-pointer active:opacity-50"
+                                onClick={() => handleEdit(employee)}
+                            >
                                 <EditIcon />
                             </span>
                         </Tooltip>
-                        <Tooltip color="danger" content="Delete user">
-                            <span className="text-lg text-danger cursor-pointer active:opacity-50">
+                        <Tooltip color="danger" content="Delete employee">
+                            <span
+                                className="text-lg text-danger cursor-pointer active:opacity-50"
+                                onClick={() => handleDelete(employee)}
+                            >
                                 <DeleteIcon />
                             </span>
                         </Tooltip>
@@ -194,23 +225,66 @@ const TableEmployeeData: React.FC = () => {
             default:
                 return cellValue;
         }
-    }, []);
+    }, [employees]);
+
+    // Loading state
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center min-h-[400px]">
+                <Spinner size="lg" label="Loading employees..." />
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="flex justify-center items-center min-h-[400px]">
+                <div className="text-center">
+                    <p className="text-danger text-lg font-semibold mb-2">Error</p>
+                    <p className="text-default-500">{error}</p>
+                    <button
+                        className="mt-4 px-4 py-2 bg-primary text-white rounded-lg"
+                        onClick={fetchEmployees}
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Empty state
+    if (employees.length === 0) {
+        return (
+            <div className="flex justify-center items-center min-h-[400px]">
+                <p className="text-default-500 text-lg">No employees found</p>
+            </div>
+        );
+    }
 
     return (
-        <Table aria-label="Employee table with custom cells">
+        <Table aria-label="Employee table with data from API">
             <TableHeader columns={columns}>
                 {(column) => (
-                    <TableColumn key={column.uid} align={column.uid === "actions" ? "center" : "start"}>
+                    <TableColumn
+                        key={column.uid}
+                        align={column.uid === "actions" ? "center" : "start"}
+                    >
                         {column.name}
                     </TableColumn>
                 )}
             </TableHeader>
-            <TableBody items={users.map((u, i) => ({ ...u, no: i + 1 }))}>
+            <TableBody items={employees}>
                 {(item) => (
                     <TableRow key={item.id}>
                         {(columnKey) => (
                             <TableCell>
-                                {renderCell(item, columnKey as string, item.no - 1)}
+                                {renderCell(
+                                    item,
+                                    columnKey as string,
+                                    employees.findIndex(emp => emp.id === item.id)
+                                )}
                             </TableCell>
                         )}
                     </TableRow>
