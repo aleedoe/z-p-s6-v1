@@ -6,6 +6,8 @@ import React from "react";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Card, CardBody } from "@heroui/card";
 import App from "./tableEmployeeSchedule";
+import { Form } from "@heroui/form";
+import { Input } from "@heroui/input";
 
 
 interface ModalEmployeeProps {
@@ -15,6 +17,11 @@ interface ModalEmployeeProps {
 }
 
 const ModalEmployee: React.FC<ModalEmployeeProps> = ({ isOpen, onClose, employee }) => {
+
+    const onSubmit = (e: any) => {
+        e.preventDefault();
+    };
+
     return (
         <Modal isOpen={isOpen} size="4xl" onClose={onClose}>
             <ModalContent>
@@ -29,9 +36,26 @@ const ModalEmployee: React.FC<ModalEmployeeProps> = ({ isOpen, onClose, employee
                                     <Tab key="photos" title="Photos">
                                         <Card>
                                             <CardBody>
-                                                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-                                                incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-                                                exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                                                <Form className="w-full max-w-xs" validationBehavior="aria" onSubmit={onSubmit}>
+                                                    <Input
+                                                        isRequired
+                                                        label="Username"
+                                                        labelPlacement="outside"
+                                                        name="username"
+                                                        placeholder="Enter your username"
+                                                        type="text"
+                                                        validate={(value) => {
+                                                            if (value.length < 3) {
+                                                                return "Username must be at least 3 characters long";
+                                                            }
+
+                                                            return value === "admin" ? "Nice try!" : null;
+                                                        }}
+                                                    />
+                                                    <Button type="submit" variant="bordered">
+                                                        Submit
+                                                    </Button>
+                                                </Form>
                                             </CardBody>
                                         </Card>
                                     </Tab>
