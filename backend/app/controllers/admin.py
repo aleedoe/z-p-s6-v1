@@ -1,5 +1,6 @@
-from flask import jsonify
+from flask import jsonify, request
 from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.security import generate_password_hash
 from ..models import db, Employee, DailySchedule, WorkSchedule, EmployeeSchedule, Attendance
 
 def get_all_employees():
@@ -62,7 +63,9 @@ def get_employee_by_id(id_employee: int):
         # Ambil jadwal kerja karyawan (join ke tabel relasi)
         schedules = (
             db.session.query(
+                DailySchedule.id.label("day_id"),
                 DailySchedule.name.label("day_name"),
+                WorkSchedule.id.label("schedule_id"),
                 WorkSchedule.name.label("schedule_name"),
                 WorkSchedule.start_time.label("start_time"),
                 WorkSchedule.end_time.label("end_time"),
@@ -79,7 +82,9 @@ def get_employee_by_id(id_employee: int):
         schedule_list = []
         for s in schedules:
             schedule_list.append({
+                "day_id": s.day_id,
                 "day_name": s.day_name,
+                "schedule_id": s.schedule_id,
                 "schedule_name": s.schedule_name,
                 "start_time": s.start_time.strftime("%H:%M"),
                 "end_time": s.end_time.strftime("%H:%M"),
@@ -98,6 +103,98 @@ def get_employee_by_id(id_employee: int):
         }
 
         return jsonify(result), 200
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+
+def create_employee():
+    try:
+        data = request.get_json()
+
+        # Validasi field wajib
+        required_fields = ["nik", "name", "gender", "position", "email", "password"]
+        if not all(field in data for field in required_fields):
+            return jsonify({"message": "Missing required fields"}), 400
+
+        # Cek duplikasi email/nik
+        if Employee.query.filter((Employee.email == data["email"]) | (Employee.nik == data["nik"])).first():
+            return jsonify({"message": "Employee with this email or NIK already exists"}), 409
+
+        hashed_password = generate_password_hash(data["password"], method="pbkdf2:sha256")
+
+        new_employee = Employee(
+            nik=data["nik"],
+            name=data["name"],
+            gender=data["gender"],
+            position=data["position"],
+            email=data["email"],
+            password=hashed_password
+        )
+
+        db.session.add(new_employee)
+        db.session.commit()
+
+        return jsonify({"message": "Employee created successfully", "id": new_employee.id}), 201
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+
+def update_employee(id_employee: int):
+    try:
+        data = request.get_json()
+        employee = Employee.query.get(id_employee)
+
+        if not employee:
+            return jsonify({"message": "Employee not found"}), 404
+
+        # Field yang boleh diubah oleh admin
+        allowed_fields = {"nik", "name", "gender", "position", "email", "password"}
+
+        # Cek duplikasi NIK/email jika ada perubahan
+        if "nik" in data and data["nik"] != employee.nik:
+            if Employee.query.filter(Employee.nik == data["nik"]).first():
+                return jsonify({"message": "NIK already exists"}), 409
+
+        if "email" in data and data["email"] != employee.email:
+            if Employee.query.filter(Employee.email == data["email"]).first():
+                return jsonify({"message": "Email already exists"}), 409
+
+        # Update field yang dikirim di request
+        for field in allowed_fields:
+            if field in data:
+                if field == "password":
+                    # hash password baru
+                    setattr(employee, field, generate_password_hash(data[field], method='pbkdf2:sha256'))
+                else:
+                    setattr(employee, field, data[field])
+
+        db.session.commit()
+
+        return jsonify({"message": "Employee updated successfully"}), 200
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+
+def delete_employee(id_employee: int):
+    try:
+        employee = Employee.query.get(id_employee)
+
+        if not employee:
+            return jsonify({"message": "Employee not found"}), 404
+
+        db.session.delete(employee)
+        db.session.commit()
+
+        return jsonify({"message": "Employee deleted successfully"}), 200
 
     except SQLAlchemyError as e:
         db.session.rollback()
