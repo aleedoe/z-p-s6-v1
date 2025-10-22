@@ -7,6 +7,7 @@ import { Tooltip } from "@heroui/tooltip";
 import { Spinner } from "@heroui/spinner";
 import { Employee } from "@/types/api/employee";
 import { employeeService } from "@/services/employee.service";
+import ModalEmployee from "./modalEmploye";
 
 // Kolom tabel
 const columns = [
@@ -127,6 +128,8 @@ const TableEmployeeData: React.FC = () => {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false); // ✅ state modal
+    const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
     // Fetch data dari API
     useEffect(() => {
@@ -154,8 +157,8 @@ const TableEmployeeData: React.FC = () => {
     };
 
     const handleEdit = (employee: Employee) => {
-        console.log('Edit employee:', employee);
-        // Implementasi logic untuk edit
+        setSelectedEmployee(employee);
+        setIsEditModalOpen(true);
     };
 
     const handleDelete = async (employee: Employee) => {
@@ -264,33 +267,40 @@ const TableEmployeeData: React.FC = () => {
     }
 
     return (
-        <Table aria-label="Employee table with data from API">
-            <TableHeader columns={columns}>
-                {(column) => (
-                    <TableColumn
-                        key={column.uid}
-                        align={column.uid === "actions" ? "center" : "start"}
-                    >
-                        {column.name}
-                    </TableColumn>
-                )}
-            </TableHeader>
-            <TableBody items={employees}>
-                {(item) => (
-                    <TableRow key={item.id}>
-                        {(columnKey) => (
-                            <TableCell>
-                                {renderCell(
-                                    item,
-                                    columnKey as string,
-                                    employees.findIndex(emp => emp.id === item.id)
-                                )}
-                            </TableCell>
-                        )}
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
+        <>
+            <Table aria-label="Employee table with data from API">
+                <TableHeader columns={columns}>
+                    {(column) => (
+                        <TableColumn
+                            key={column.uid}
+                            align={column.uid === "actions" ? "center" : "start"}
+                        >
+                            {column.name}
+                        </TableColumn>
+                    )}
+                </TableHeader>
+                <TableBody items={employees}>
+                    {(item) => (
+                        <TableRow key={item.id}>
+                            {(columnKey) => (
+                                <TableCell>
+                                    {renderCell(
+                                        item,
+                                        columnKey as string,
+                                        employees.findIndex(emp => emp.id === item.id)
+                                    )}
+                                </TableCell>
+                            )}
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
+            <ModalEmployee
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                employee={selectedEmployee}
+            />
+        </>
     );
 };
 
