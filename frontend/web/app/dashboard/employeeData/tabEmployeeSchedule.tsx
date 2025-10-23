@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from 
 import { EmployeeSchedule } from "@/types/api/employee";
 import { Tooltip } from "@heroui/tooltip";
 import { Card, CardBody } from "@heroui/card";
+import { Button } from "@heroui/button";
 
 interface TableEmployeeScheduleProps {
     schedules: EmployeeSchedule[];
@@ -139,8 +140,21 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({ schedules
     }
 
     return (
-        <>
-            <Card>
+        <div className="flex gap-2 flex-col">
+            <div className="flex justify-between flex-wrap gap-4 items-center">
+                <div className="flex items-center gap-3 flex-wrap md:flex-nowrap">
+                    {/* Search input can be added here later */}
+                </div>
+                <div className="flex flex-row flex-wrap">
+                    <Button
+                        color="primary"
+                        onPress={() => console.log("Add Schedule")}
+                    >
+                        Add Schedule
+                    </Button>
+                </div>
+            </div>
+            <Card className="shadow-none">
                 <CardBody>
                     <Table aria-label="Employee schedule table">
                         <TableHeader columns={columns}>
@@ -164,7 +178,7 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({ schedules
                     </Table>
                 </CardBody>
             </Card>
-        </>
+        </div>
     );
 };
 
