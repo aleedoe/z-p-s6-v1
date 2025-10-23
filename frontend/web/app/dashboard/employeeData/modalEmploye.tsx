@@ -10,7 +10,7 @@ import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@heroui/d
 import { EmployeeDetailResponse, EmployeeSchedule } from "@/types/api/employee";
 import { employeeService } from "@/services/employee.service";
 import { Spinner } from "@heroui/spinner";
-import TableEmployeeSchedule from "./tableEmployeeSchedule";
+import TableEmployeeSchedule from "./tabEmployeeSchedule";
 
 interface ModalEmployeeProps {
     isOpen: boolean;
@@ -119,7 +119,7 @@ const ModalEmployee: React.FC<ModalEmployeeProps> = ({
                                         <Tab key="details" title="Details">
                                             <Card>
                                                 <CardBody>
-                                                    <form className="w-full space-y-4" onSubmit={onSubmit}>
+                                                    <form className="w-full space-y-4 flex flex-col gap-2" onSubmit={onSubmit}>
                                                         <Input
                                                             isRequired
                                                             label="Email"
