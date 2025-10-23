@@ -5,11 +5,11 @@ import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from 
 import { Chip } from "@heroui/chip";
 import { Tooltip } from "@heroui/tooltip";
 import { Spinner } from "@heroui/spinner";
-import { Employee } from "@/types/api/employee";
+import { Employee, EmployeeDetailResponse } from "@/types/api/employee";
 import { employeeService } from "@/services/employee.service";
 import ModalEmployee from "./modalEmploye";
+import ModalDeleteConfirm from "./modalDeleteConfirm";
 
-// Kolom tabel
 const columns = [
     { name: "NO", uid: "no" },
     { name: "NIK", uid: "nik" },
@@ -19,40 +19,10 @@ const columns = [
     { name: "ACTIONS", uid: "actions" },
 ];
 
-// Warna gender (opsional)
 const genderColorMap: Record<string, "primary" | "secondary"> = {
     Male: "primary",
     Female: "secondary",
 };
-
-// Icons
-const EyeIcon = (props: any) => (
-    <svg
-        aria-hidden="true"
-        fill="none"
-        focusable="false"
-        height="1em"
-        role="presentation"
-        viewBox="0 0 20 20"
-        width="1em"
-        {...props}
-    >
-        <path
-            d="M12.9833 10C12.9833 11.65 11.65 12.9833 10 12.9833C8.35 12.9833 7.01666 11.65 7.01666 10C7.01666 8.35 8.35 7.01666 10 7.01666C11.65 7.01666 12.9833 8.35 12.9833 10Z"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-        />
-        <path
-            d="M9.99999 16.8916C12.9417 16.8916 15.6833 15.1583 17.5917 12.1583C18.3417 10.9833 18.3417 9.00831 17.5917 7.83331C15.6833 4.83331 12.9417 3.09998 9.99999 3.09998C7.05833 3.09998 4.31666 4.83331 2.40833 7.83331C1.65833 9.00831 1.65833 10.9833 2.40833 12.1583C4.31666 15.1583 7.05833 16.8916 9.99999 16.8916Z"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-        />
-    </svg>
-);
 
 const EditIcon = (props: any) => (
     <svg
@@ -128,10 +98,12 @@ const TableEmployeeData: React.FC = () => {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false); // ✅ state modal
-    const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedEmployee, setSelectedEmployee] = useState<EmployeeDetailResponse | null>(null);
+    const [loadingDetail, setLoadingDetail] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
 
-    // Fetch data dari API
     useEffect(() => {
         fetchEmployees();
     }, []);
@@ -150,28 +122,47 @@ const TableEmployeeData: React.FC = () => {
         }
     };
 
-    // Handler untuk actions
-    const handleView = (employee: Employee) => {
-        console.log('View employee:', employee);
-        // Implementasi logic untuk view detail
-    };
-
-    const handleEdit = (employee: Employee) => {
-        setSelectedEmployee(employee);
-        setIsEditModalOpen(true);
-    };
-
-    const handleDelete = async (employee: Employee) => {
-        if (window.confirm(`Are you sure you want to delete ${employee.name}?`)) {
-            try {
-                // await employeeService.delete(employee.id);
-                // Refresh data setelah delete
-                setEmployees(employees.filter(emp => emp.id !== employee.id));
-                console.log('Deleted employee:', employee);
-            } catch (err: any) {
-                alert(`Failed to delete employee: ${err.message}`);
-            }
+    const handleEdit = async (employee: Employee) => {
+        try {
+            setLoadingDetail(true);
+            setIsEditModalOpen(true);
+            const detail = await employeeService.getById(employee.id);
+            setSelectedEmployee(detail);
+        } catch (err: any) {
+            console.error('Error fetching employee detail:', err);
+            alert(`Failed to load employee details: ${err.message}`);
+            setIsEditModalOpen(false);
+        } finally {
+            setLoadingDetail(false);
         }
+    };
+
+    const handleDelete = (employee: Employee) => {
+        setEmployeeToDelete(employee);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!employeeToDelete) return;
+
+        try {
+            await employeeService.delete(employeeToDelete.id);
+            setEmployees(employees.filter(emp => emp.id !== employeeToDelete.id));
+            setIsDeleteModalOpen(false);
+            setEmployeeToDelete(null);
+        } catch (err: any) {
+            alert(`Failed to delete employee: ${err.message}`);
+        }
+    };
+
+    const handleModalClose = () => {
+        setIsEditModalOpen(false);
+        setSelectedEmployee(null);
+    };
+
+    const handleUpdateSuccess = () => {
+        fetchEmployees();
+        handleModalClose();
     };
 
     const renderCell = React.useCallback((employee: Employee, columnKey: string, index: number) => {
@@ -230,7 +221,6 @@ const TableEmployeeData: React.FC = () => {
         }
     }, [employees]);
 
-    // Loading state
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-[400px]">
@@ -239,7 +229,6 @@ const TableEmployeeData: React.FC = () => {
         );
     }
 
-    // Error state
     if (error) {
         return (
             <div className="flex justify-center items-center min-h-[400px]">
@@ -257,7 +246,6 @@ const TableEmployeeData: React.FC = () => {
         );
     }
 
-    // Empty state
     if (employees.length === 0) {
         return (
             <div className="flex justify-center items-center min-h-[400px]">
@@ -297,8 +285,16 @@ const TableEmployeeData: React.FC = () => {
             </Table>
             <ModalEmployee
                 isOpen={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
+                onClose={handleModalClose}
                 employee={selectedEmployee}
+                loading={loadingDetail}
+                onSuccess={handleUpdateSuccess}
+            />
+            <ModalDeleteConfirm
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                employeeName={employeeToDelete?.name || ''}
             />
         </>
     );
