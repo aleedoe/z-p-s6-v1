@@ -13,12 +13,31 @@ export interface Employee {
     gender: string;
 }
 
+export interface EmployeeSchedule {
+    schedule_id: number;
+    schedule_name: string;
+    day_id: number;
+    day_name: string;
+    start_time: string;
+    end_time: string;
+    tolerance_minutes: number;
+}
+
+export interface EmployeeDetailResponse {
+    id: number;
+    nik: string;
+    name: string;
+    email: string;
+    position: string;
+    gender: string;
+    schedules: EmployeeSchedule[];
+}
+
 export interface EmployeesResponse {
     employees: Employee[];
     total_employees: number;
 }
 
-// Tambahkan type lain sesuai kebutuhan
 export interface PaginationParams {
     page?: number;
     limit?: number;
