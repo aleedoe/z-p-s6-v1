@@ -7,6 +7,7 @@ import { Card, CardBody } from "@heroui/card";
 import { Input } from "@heroui/input";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@heroui/dropdown";
 import { employeeService } from "@/services/employee.service";
+import { ScrollShadow } from "@heroui/scroll-shadow";
 
 interface ModalAddEmployeeProps {
     isOpen: boolean;
@@ -154,6 +155,7 @@ const ModalAddEmployee: React.FC<ModalAddEmployeeProps> = ({
                         <ModalBody>
                             <Card>
                                 <CardBody>
+                                    <ScrollShadow hideScrollBar className="w-full max-h-[60vh]">
                                     <form className="w-full space-y-4 flex flex-col gap-2" onSubmit={onSubmit}>
                                         <Input
                                             isRequired
@@ -247,6 +249,7 @@ const ModalAddEmployee: React.FC<ModalAddEmployeeProps> = ({
                                             Create Employee
                                         </Button>
                                     </form>
+                                    </ScrollShadow>
                                 </CardBody>
                             </Card>
                         </ModalBody>
