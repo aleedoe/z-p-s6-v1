@@ -2,6 +2,7 @@ import React from "react";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/table";
 import { EmployeeSchedule } from "@/types/api/employee";
 import { Tooltip } from "@heroui/tooltip";
+import { Card, CardBody } from "@heroui/card";
 
 interface TableEmployeeScheduleProps {
     schedules: EmployeeSchedule[];
@@ -138,26 +139,32 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({ schedules
     }
 
     return (
-        <Table aria-label="Employee schedule table">
-            <TableHeader columns={columns}>
-                {(column) => (
-                    <TableColumn key={column.uid} align="start">
-                        {column.name}
-                    </TableColumn>
-                )}
-            </TableHeader>
-            <TableBody items={schedules}>
-                {(item) => (
-                    <TableRow key={`${item.day_id}-${item.schedule_id}`}>
-                        {(columnKey) => (
-                            <TableCell>
-                                {renderCell(item, columnKey as string)}
-                            </TableCell>
-                        )}
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
+        <>
+            <Card>
+                <CardBody>
+                    <Table aria-label="Employee schedule table">
+                        <TableHeader columns={columns}>
+                            {(column) => (
+                                <TableColumn key={column.uid} align="start">
+                                    {column.name}
+                                </TableColumn>
+                            )}
+                        </TableHeader>
+                        <TableBody items={schedules}>
+                            {(item) => (
+                                <TableRow key={`${item.day_id}-${item.schedule_id}`}>
+                                    {(columnKey) => (
+                                        <TableCell>
+                                            {renderCell(item, columnKey as string)}
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardBody>
+            </Card>
+        </>
     );
 };
 

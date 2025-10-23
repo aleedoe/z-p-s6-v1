@@ -64,11 +64,9 @@ const ModalEmployee: React.FC<ModalEmployeeProps> = ({
                                         </Card>
                                     </Tab>
                                     <Tab key="schedules" title="Schedules">
-                                        <Card>
-                                            <CardBody>
-                                                <TableEmployeeSchedule schedules={schedules} />
-                                            </CardBody>
-                                        </Card>
+                                        <ScrollShadow hideScrollBar className="w-full max-h-[50vh]">
+                                            <TableEmployeeSchedule schedules={schedules} />
+                                        </ScrollShadow>
                                     </Tab>
                                 </Tabs>
                             )}
