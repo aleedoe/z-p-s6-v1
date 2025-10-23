@@ -119,6 +119,25 @@ const ModalAddEmployee: React.FC<ModalAddEmployeeProps> = ({
         }
     };
 
+    const handleSubmit = async () => {
+        if (!validateForm()) return;
+
+        try {
+            setSubmitting(true);
+            await employeeService.create(formData);
+            alert("Employee created successfully");
+            resetForm();
+            onSuccess?.();
+            onClose();
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || err.message || "Failed to create employee";
+            alert(`Error: ${errorMessage}`);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+
     const handleClose = () => {
         resetForm();
         onClose();
@@ -135,7 +154,7 @@ const ModalAddEmployee: React.FC<ModalAddEmployeeProps> = ({
                         <ModalBody>
                             <Card>
                                 <CardBody>
-                                    <form className="w-full space-y-4" onSubmit={onSubmit}>
+                                    <form className="w-full space-y-4 flex flex-col gap-2" onSubmit={onSubmit}>
                                         <Input
                                             isRequired
                                             label="NIK"
@@ -219,6 +238,14 @@ const ModalAddEmployee: React.FC<ModalAddEmployeeProps> = ({
                                             isInvalid={!!errors.password}
                                             errorMessage={errors.password}
                                         />
+                                        <Button
+                                            color="primary"
+                                            type="submit" // ✅ ini kuncinya
+                                            isLoading={submitting}
+                                            className="hidden"
+                                        >
+                                            Create Employee
+                                        </Button>
                                     </form>
                                 </CardBody>
                             </Card>
@@ -229,7 +256,7 @@ const ModalAddEmployee: React.FC<ModalAddEmployeeProps> = ({
                             </Button>
                             <Button
                                 color="primary"
-                                onPress={onSubmit}
+                                onPress={handleSubmit} // ✅ tidak pakai FormEvent
                                 isLoading={submitting}
                             >
                                 Create Employee
