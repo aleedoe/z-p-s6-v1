@@ -146,7 +146,7 @@ const TableEmployeeData: React.FC = () => {
         if (!employeeToDelete) return;
 
         try {
-            await employeeService.delete(employeeToDelete.id);
+            await employeeService.deleteById(employeeToDelete.id);
             setEmployees(employees.filter(emp => emp.id !== employeeToDelete.id));
             setIsDeleteModalOpen(false);
             setEmployeeToDelete(null);

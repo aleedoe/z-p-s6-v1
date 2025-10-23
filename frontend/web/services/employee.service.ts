@@ -34,9 +34,10 @@ class EmployeeService extends BaseService {
         return this.put<{ message: string }>(this.endpoint + `/${id}`, data);
     }
 
-    async delete(id: number): Promise<{ message: string }> {
+    async deleteById(id: number): Promise<{ message: string }> {
         return this.delete<{ message: string }>(`${this.endpoint}/${id}`);
     }
+
 
     async search(query: string): Promise<EmployeesResponse> {
         return this.get<EmployeesResponse>(`${this.endpoint}/search`, {
