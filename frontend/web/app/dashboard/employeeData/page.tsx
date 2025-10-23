@@ -15,7 +15,7 @@ export default function EmployeeDataPage() {
                     /> */}
                 </div>
                 <div className="flex flex-row flex-wrap">
-                    {/* <AddProduct /> */}
+                    {/* <AddEmployee /> */}
                 </div>
             </div>
             <div className="max-w-[95rem] mx-auto w-full">
