@@ -1,9 +1,11 @@
-import React from "react";
+"use client";
+import React, { useState } from "react";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/table";
 import { EmployeeSchedule } from "@/types/api/employee";
 import { Tooltip } from "@heroui/tooltip";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
+import { Input } from "@heroui/input"; // kalau kamu mau pakai input di form
 
 interface TableEmployeeScheduleProps {
     schedules: EmployeeSchedule[];
@@ -17,7 +19,6 @@ const columns = [
     { name: "TOLERANCE", uid: "tolerance_minutes" },
     { name: "ACTIONS", uid: "actions" },
 ];
-
 
 const EditIcon = (props: any) => (
     <svg
@@ -89,8 +90,9 @@ const DeleteIcon = (props: any) => (
     </svg>
 );
 
-
 const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({ schedules }) => {
+    const [isAdding, setIsAdding] = useState(false);
+
     const renderCell = React.useCallback((schedule: EmployeeSchedule, columnKey: string) => {
         const cellValue = schedule[columnKey as keyof EmployeeSchedule];
 
@@ -108,19 +110,13 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({ schedules
             case "actions":
                 return (
                     <div className="relative flex justify-center gap-2">
-                        <Tooltip content="Edit employee">
-                            <span
-                                className="text-lg text-default-400 cursor-pointer active:opacity-50"
-                                onClick={() => console.log("Edit")}
-                            >
+                        <Tooltip content="Edit schedule">
+                            <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
                                 <EditIcon />
                             </span>
                         </Tooltip>
-                        <Tooltip color="danger" content="Delete employee">
-                            <span
-                                className="text-lg text-danger cursor-pointer active:opacity-50"
-                                onClick={() => console.log("Delete")}
-                            >
+                        <Tooltip color="danger" content="Delete schedule">
+                            <span className="text-lg text-danger cursor-pointer active:opacity-50">
                                 <DeleteIcon />
                             </span>
                         </Tooltip>
@@ -131,53 +127,70 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({ schedules
         }
     }, []);
 
-    if (schedules.length === 0) {
-        return (
-            <div className="flex justify-center items-center min-h-[200px]">
-                <p className="text-default-500">No schedules assigned</p>
-            </div>
-        );
-    }
-
     return (
-        <div className="flex gap-2 flex-col">
-            <div className="flex justify-between flex-wrap gap-4 items-center">
-                <div className="flex items-center gap-3 flex-wrap md:flex-nowrap">
-                    {/* Search input can be added here later */}
-                </div>
-                <div className="flex flex-row flex-wrap">
-                    <Button
-                        color="primary"
-                        onPress={() => console.log("Add Schedule")}
-                    >
-                        Add Schedule
-                    </Button>
-                </div>
-            </div>
-            <Card className="shadow-none">
-                <CardBody>
-                    <Table aria-label="Employee schedule table">
-                        <TableHeader columns={columns}>
-                            {(column) => (
-                                <TableColumn key={column.uid} align="start">
-                                    {column.name}
-                                </TableColumn>
-                            )}
-                        </TableHeader>
-                        <TableBody items={schedules}>
-                            {(item) => (
-                                <TableRow key={`${item.day_id}-${item.schedule_id}`}>
-                                    {(columnKey) => (
-                                        <TableCell>
-                                            {renderCell(item, columnKey as string)}
-                                        </TableCell>
+        <div className="flex flex-col gap-3">
+            {/* ===== Kondisional tampilan ===== */}
+            {!isAdding ? (
+                <>
+                    <div className="flex justify-between items-center">
+                        <h3 className="font-semibold text-large">Schedule List</h3>
+                        <Button color="primary" onPress={() => setIsAdding(true)}>
+                            Add Schedule
+                        </Button>
+                    </div>
+                    <Card className="shadow-none">
+                        <CardBody>
+                            <Table aria-label="Employee schedule table">
+                                <TableHeader columns={columns}>
+                                    {(column) => (
+                                        <TableColumn key={column.uid}>{column.name}</TableColumn>
                                     )}
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardBody>
-            </Card>
+                                </TableHeader>
+                                <TableBody items={schedules}>
+                                    {(item) => (
+                                        <TableRow key={`${item.day_id}-${item.schedule_id}`}>
+                                            {(columnKey) => (
+                                                <TableCell>{renderCell(item, columnKey as string)}</TableCell>
+                                            )}
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardBody>
+                    </Card>
+                </>
+            ) : (
+                <>
+                    <div className="flex justify-between items-center">
+                        <h3 className="font-semibold text-large">Add New Schedule</h3>
+                        <div className="flex gap-2">
+                            <Button variant="light" color="danger" onPress={() => setIsAdding(false)}>
+                                Back
+                            </Button>
+                            <Button color="primary" onPress={() => {
+                                // Simulasikan save, nanti kamu bisa panggil API di sini
+                                console.log("Schedule saved!");
+                                setIsAdding(false);
+                            }}>
+                                Save
+                            </Button>
+                        </div>
+                    </div>
+
+                    <Card className="shadow-none mt-2">
+                        <CardBody className="flex flex-col gap-4">
+                            {/* Contoh form input jadwal */}
+                            <Input label="Day" placeholder="e.g. Monday" />
+                            <Input label="Schedule Name" placeholder="e.g. Morning Shift" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <Input type="time" label="Start Time" />
+                                <Input type="time" label="End Time" />
+                            </div>
+                            <Input type="number" label="Tolerance (minutes)" placeholder="e.g. 10" />
+                        </CardBody>
+                    </Card>
+                </>
+            )}
         </div>
     );
 };
