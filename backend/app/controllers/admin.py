@@ -109,6 +109,137 @@ def get_employee_by_id(id_employee: int):
         return jsonify({"error": str(e)}), 500
 
 
+def get_available_schedules_for_employee(id_employee: int):
+    try:
+        # --- Ambil daftar daily_schedules_id yang sudah dimiliki oleh employee ---
+        assigned_daily_schedules = (
+            db.session.query(EmployeeSchedule.daily_schedules_id)
+            .filter(EmployeeSchedule.employee_id == id_employee)
+            .subquery()
+        )
+
+        # --- Ambil semua WorkSchedule (tanpa filter) ---
+        all_work_schedules = (
+            db.session.query(
+                WorkSchedule.id,
+                WorkSchedule.name,
+                WorkSchedule.start_time,
+                WorkSchedule.end_time,
+                WorkSchedule.tolerance_minutes
+            )
+            .order_by(WorkSchedule.id.asc())
+            .all()
+        )
+
+        # --- Ambil DailySchedule yang belum dimiliki oleh employee ---
+        available_daily_schedules = (
+            db.session.query(
+                DailySchedule.id,
+                DailySchedule.name
+            )
+            .filter(~DailySchedule.id.in_(assigned_daily_schedules.select()))
+            .order_by(DailySchedule.id.asc())
+            .all()
+        )
+
+        # --- Format hasil ---
+        work_schedule_list = [
+            {
+                "id": ws.id,
+                "name": ws.name,
+                "start_time": ws.start_time.strftime("%H:%M"),
+                "end_time": ws.end_time.strftime("%H:%M"),
+                "tolerance_minutes": ws.tolerance_minutes,
+            }
+            for ws in all_work_schedules
+        ]
+
+        daily_schedule_list = [
+            {
+                "id": ds.id,
+                "name": ds.name,
+            }
+            for ds in available_daily_schedules
+        ]
+
+        result = {
+            "daily_schedules": daily_schedule_list,
+            "work_schedules": work_schedule_list,
+        }
+
+        return jsonify(result), 200
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+
+def add_employee_schedule():
+    try:
+        data = request.get_json()
+
+        employee_id = data.get("employee_id")
+        work_schedules_id = data.get("work_schedules_id")
+        daily_schedules_id = data.get("daily_schedules_id")
+
+        # --- Validasi input dasar ---
+        if not all([employee_id, work_schedules_id, daily_schedules_id]):
+            return jsonify({"message": "employee_id, work_schedules_id, dan daily_schedules_id wajib diisi"}), 400
+
+        # --- Cek apakah employee, work schedule, dan daily schedule benar-benar ada ---
+        employee_exists = db.session.query(Employee.id).filter_by(id=employee_id).first()
+        if not employee_exists:
+            return jsonify({"message": "Employee tidak ditemukan"}), 404
+
+        work_schedule_exists = db.session.query(WorkSchedule.id).filter_by(id=work_schedules_id).first()
+        if not work_schedule_exists:
+            return jsonify({"message": "Work schedule tidak ditemukan"}), 404
+
+        daily_schedule_exists = db.session.query(DailySchedule.id).filter_by(id=daily_schedules_id).first()
+        if not daily_schedule_exists:
+            return jsonify({"message": "Daily schedule tidak ditemukan"}), 404
+
+        # --- Cek apakah kombinasi sudah ada (hindari duplikasi) ---
+        existing_schedule = (
+            db.session.query(EmployeeSchedule)
+            .filter_by(
+                employee_id=employee_id,
+                work_schedules_id=work_schedules_id,
+                daily_schedules_id=daily_schedules_id
+            )
+            .first()
+        )
+
+        if existing_schedule:
+            return jsonify({"message": "Schedule untuk kombinasi ini sudah ada"}), 400
+
+        # --- Buat entri baru ---
+        new_schedule = EmployeeSchedule(
+            employee_id=employee_id,
+            work_schedules_id=work_schedules_id,
+            daily_schedules_id=daily_schedules_id
+        )
+
+        db.session.add(new_schedule)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Employee schedule berhasil ditambahkan",
+            "data": {
+                "id": new_schedule.id,
+                "employee_id": new_schedule.employee_id,
+                "work_schedules_id": new_schedule.work_schedules_id,
+                "daily_schedules_id": new_schedule.daily_schedules_id
+            }
+        }), 201
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+
 
 def create_employee():
     try:

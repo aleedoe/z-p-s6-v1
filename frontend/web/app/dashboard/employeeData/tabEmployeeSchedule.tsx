@@ -6,6 +6,7 @@ import { Tooltip } from "@heroui/tooltip";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input"; // kalau kamu mau pakai input di form
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@heroui/dropdown";
 
 interface TableEmployeeScheduleProps {
     schedules: EmployeeSchedule[];
@@ -126,6 +127,12 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({ schedules
                 return cellValue;
         }
     }, []);
+    const [selectedKeys, setSelectedKeys] = React.useState(new Set(["text"]));
+
+    const selectedValue = React.useMemo(
+        () => Array.from(selectedKeys).join(", ").replace(/_/g, ""),
+        [selectedKeys],
+    );
 
     return (
         <div className="flex flex-col gap-3">
@@ -180,13 +187,60 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({ schedules
                     <Card className="shadow-none mt-2">
                         <CardBody className="flex flex-col gap-4">
                             {/* Contoh form input jadwal */}
-                            <Input label="Day" placeholder="e.g. Monday" />
-                            <Input label="Schedule Name" placeholder="e.g. Morning Shift" />
-                            <div className="grid grid-cols-2 gap-4">
-                                <Input type="time" label="Start Time" />
-                                <Input type="time" label="End Time" />
+                            <div className="flex flex-row gap-2">
+                                <div className="basis-1/2">
+                                    <div className="flex flex-col">
+                                        <label className="text-sm font-medium">Hari</label>
+                                        <Dropdown>
+                                            <DropdownTrigger>
+                                                <Button className="capitalize" variant="bordered">
+                                                    {selectedValue}
+                                                </Button>
+                                            </DropdownTrigger>
+                                            <DropdownMenu
+                                                disallowEmptySelection
+                                                aria-label="Single selection example"
+                                                selectedKeys={selectedKeys}
+                                                selectionMode="single"
+                                                variant="flat"
+                                            // onSelectionChange={setSelectedKeys}
+                                            >
+                                                <DropdownItem key="text">Text</DropdownItem>
+                                                <DropdownItem key="number">Number</DropdownItem>
+                                                <DropdownItem key="date">Date</DropdownItem>
+                                                <DropdownItem key="single_date">Single Date</DropdownItem>
+                                                <DropdownItem key="iteration">Iteration</DropdownItem>
+                                            </DropdownMenu>
+                                        </Dropdown>
+                                    </div>
+                                </div>
+                                <div className="basis-1/2">
+                                    <div className="flex flex-col">
+                                        <label className="text-sm font-medium">Jam</label>
+                                        <Dropdown>
+                                            <DropdownTrigger>
+                                                <Button className="capitalize" variant="bordered">
+                                                    {selectedValue}
+                                                </Button>
+                                            </DropdownTrigger>
+                                            <DropdownMenu
+                                                disallowEmptySelection
+                                                aria-label="Single selection example"
+                                                selectedKeys={selectedKeys}
+                                                selectionMode="single"
+                                                variant="flat"
+                                            // onSelectionChange={setSelectedKeys}
+                                            >
+                                                <DropdownItem key="text">Text</DropdownItem>
+                                                <DropdownItem key="number">Number</DropdownItem>
+                                                <DropdownItem key="date">Date</DropdownItem>
+                                                <DropdownItem key="single_date">Single Date</DropdownItem>
+                                                <DropdownItem key="iteration">Iteration</DropdownItem>
+                                            </DropdownMenu>
+                                        </Dropdown>
+                                    </div>
+                                </div>
                             </div>
-                            <Input type="number" label="Tolerance (minutes)" placeholder="e.g. 10" />
                         </CardBody>
                     </Card>
                 </>
