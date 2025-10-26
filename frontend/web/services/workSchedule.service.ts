@@ -1,4 +1,4 @@
-import { WorkSchedule, WorkSchedulesResponse, WorkScheduleDetailResponse } from "@/types/api/workSchedule";
+import { WorkScheduleDetailResponse, WorkSchedulesResponse } from "@/types/api/workSchedule";
 import { BaseService } from "./base.service";
 
 class WorkScheduleService extends BaseService {

@@ -6,8 +6,8 @@ import React, { useState, useEffect } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Input } from "@heroui/input";
 import { Spinner } from "@heroui/spinner";
-import { workScheduleService } from "@/services/workSchedule.service";
 import { WorkScheduleDetailResponse } from "@/types/api/workSchedule";
+import { workScheduleService } from "@/services/workSchedule.service";
 
 interface ModalWorkScheduleProps {
     isOpen: boolean;
@@ -64,11 +64,11 @@ const ModalWorkSchedule: React.FC<ModalWorkScheduleProps> = ({
             newErrors.end_time = "End time is required";
         }
 
-        if (formData.start_time && formData.end_time) {
-            if (formData.start_time >= formData.end_time) {
-                newErrors.end_time = "End time must be later than start time";
-            }
-        }
+        // if (formData.start_time && formData.end_time) {
+        //     if (formData.start_time >= formData.end_time) {
+        //         newErrors.end_time = "End time must be later than start time";
+        //     }
+        // }
 
         const tolerance = parseInt(formData.tolerance_minutes);
         if (isNaN(tolerance) || tolerance < 0) {

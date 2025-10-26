@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
+import { Button } from "@heroui/button";
 import TableWorkSchedule from "./tableWorkSchedule";
 import ModalAddWorkSchedule from "./modalAddWorkSchedule";
-import { Button } from "@heroui/button";
 
 export default function WorkSchedulePage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);

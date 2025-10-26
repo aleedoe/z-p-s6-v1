@@ -7,7 +7,7 @@ import { Tooltip } from "@heroui/tooltip";
 import { Spinner } from "@heroui/spinner";
 import { WorkSchedule, WorkScheduleDetailResponse } from "@/types/api/workSchedule";
 import { workScheduleService } from "@/services/workSchedule.service";
-import ModalWorkSchedule from "./modalWorkSchedule";
+import ModalWorkSchedule from "./modalEditWorkSchedule";
 import ModalDeleteConfirm from "./modalDeleteConfirm";
 
 const columns = [

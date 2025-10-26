@@ -48,12 +48,12 @@ const ModalAddWorkSchedule: React.FC<ModalAddWorkScheduleProps> = ({
             newErrors.end_time = "End time is required";
         }
 
-        // Validate start time must be earlier than end time
-        if (formData.start_time && formData.end_time) {
-            if (formData.start_time >= formData.end_time) {
-                newErrors.end_time = "End time must be later than start time";
-            }
-        }
+        // // Validate start time must be earlier than end time
+        // if (formData.start_time && formData.end_time) {
+        //     if (formData.start_time >= formData.end_time) {
+        //         newErrors.end_time = "End time must be later than start time";
+        //     }
+        // }
 
         const tolerance = parseInt(formData.tolerance_minutes);
         if (isNaN(tolerance) || tolerance < 0) {
