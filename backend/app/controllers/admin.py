@@ -82,6 +82,7 @@ def get_employee_by_id(id_employee: int):
         schedule_list = []
         for s in schedules:
             schedule_list.append({
+                "employee_schedule_id": s.schedule_id,
                 "day_id": s.day_id,
                 "day_name": s.day_name,
                 "schedule_id": s.schedule_id,
