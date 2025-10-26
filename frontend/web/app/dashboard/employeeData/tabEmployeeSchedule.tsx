@@ -94,27 +94,31 @@ const DeleteIcon = (props: any) => (
     </svg>
 );
 
+type FormMode = 'view' | 'add' | 'edit';
+
 const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({
     schedules,
     employeeId,
     onScheduleAdded
 }) => {
-    const [isAdding, setIsAdding] = useState(false);
+    const [formMode, setFormMode] = useState<FormMode>('view');
     const [dailySchedules, setDailySchedules] = useState<DailySchedule[]>([]);
     const [workSchedules, setWorkSchedules] = useState<WorkSchedule[]>([]);
     const [loadingSchedules, setLoadingSchedules] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [deleting, setDeleting] = useState<number | null>(null);
 
     // Form state
     const [selectedDay, setSelectedDay] = useState<string>("");
     const [selectedSchedule, setSelectedSchedule] = useState<string>("");
+    const [editingSchedule, setEditingSchedule] = useState<EmployeeSchedule | null>(null);
 
     // Fetch available schedules when form is opened
     useEffect(() => {
-        if (isAdding && employeeId) {
+        if ((formMode === 'add' || formMode === 'edit') && employeeId) {
             fetchAvailableSchedules();
         }
-    }, [isAdding, employeeId]);
+    }, [formMode, employeeId]);
 
     const fetchAvailableSchedules = async () => {
         if (!employeeId) return;
@@ -133,13 +137,44 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({
     };
 
     const handleEdit = (schedule: EmployeeSchedule) => {
-        alert(`Edit Schedule\nEmployee Schedule ID: ${schedule.employee_schedule_id}\nDay: ${schedule.day_name}\nSchedule: ${schedule.schedule_name}`);
-        // TODO: Implement edit functionality
+        setEditingSchedule(schedule);
+        setSelectedDay(schedule.day_id.toString());
+        setSelectedSchedule(schedule.schedule_id.toString());
+        setFormMode('edit');
     };
 
-    const handleDelete = (schedule: EmployeeSchedule) => {
-        alert(`Delete Schedule\nEmployee Schedule ID: ${schedule.employee_schedule_id}\nDay: ${schedule.day_name}\nSchedule: ${schedule.schedule_name}`);
-        // TODO: Implement delete functionality
+    const handleDelete = async (schedule: EmployeeSchedule) => {
+        if (!employeeId) {
+            alert("Employee ID is missing");
+            return;
+        }
+
+        const confirmed = window.confirm(
+            `Are you sure you want to delete this schedule?\n\nDay: ${schedule.day_name}\nSchedule: ${schedule.schedule_name}`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            setDeleting(schedule.employee_schedule_id);
+            await employeeService.deleteEmployeeSchedule(
+                employeeId,
+                schedule.employee_schedule_id
+            );
+
+            alert("Schedule deleted successfully!");
+
+            // Notify parent to refresh data
+            if (onScheduleAdded) {
+                onScheduleAdded();
+            }
+        } catch (error: any) {
+            console.error('Error deleting schedule:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'Failed to delete schedule';
+            alert(`Failed to delete schedule: ${errorMessage}`);
+        } finally {
+            setDeleting(null);
+        }
     };
 
     const handleSave = async () => {
@@ -155,26 +190,38 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({
 
         try {
             setSubmitting(true);
-            const response = await employeeService.addEmployeeSchedule(employeeId, {
-                daily_schedules_id: parseInt(selectedDay),
-                work_schedules_id: parseInt(selectedSchedule)
-            });
 
-            alert(response.message || "Schedule added successfully!");
+            if (formMode === 'edit' && editingSchedule) {
+                // Update existing schedule
+                const response = await employeeService.updateEmployeeSchedule(
+                    employeeId,
+                    editingSchedule.employee_schedule_id,
+                    {
+                        daily_schedules_id: parseInt(selectedDay),
+                        work_schedules_id: parseInt(selectedSchedule)
+                    }
+                );
+                alert(response.message || "Schedule updated successfully!");
+            } else {
+                // Add new schedule
+                const response = await employeeService.addEmployeeSchedule(employeeId, {
+                    daily_schedules_id: parseInt(selectedDay),
+                    work_schedules_id: parseInt(selectedSchedule)
+                });
+                alert(response.message || "Schedule added successfully!");
+            }
 
             // Reset form
-            setSelectedDay("");
-            setSelectedSchedule("");
-            setIsAdding(false);
+            handleCancel();
 
             // Notify parent to refresh data
             if (onScheduleAdded) {
                 onScheduleAdded();
             }
         } catch (error: any) {
-            console.error('Error adding schedule:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Failed to add schedule';
-            alert(`Failed to add schedule: ${errorMessage}`);
+            console.error('Error saving schedule:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'Failed to save schedule';
+            alert(`Failed to save schedule: ${errorMessage}`);
         } finally {
             setSubmitting(false);
         }
@@ -183,7 +230,8 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({
     const handleCancel = () => {
         setSelectedDay("");
         setSelectedSchedule("");
-        setIsAdding(false);
+        setEditingSchedule(null);
+        setFormMode('view');
     };
 
     // Get selected work schedule details for preview
@@ -218,10 +266,16 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({
                         </Tooltip>
                         <Tooltip color="danger" content="Delete schedule">
                             <span
-                                className="text-lg text-danger cursor-pointer active:opacity-50"
+                                className={`text-lg text-danger cursor-pointer active:opacity-50 ${
+                                    deleting === schedule.employee_schedule_id ? 'opacity-50 pointer-events-none' : ''
+                                }`}
                                 onClick={() => handleDelete(schedule)}
                             >
-                                <DeleteIcon />
+                                {deleting === schedule.employee_schedule_id ? (
+                                    <Spinner size="sm" color="danger" />
+                                ) : (
+                                    <DeleteIcon />
+                                )}
                             </span>
                         </Tooltip>
                     </div>
@@ -229,15 +283,15 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({
             default:
                 return cellValue;
         }
-    }, []);
+    }, [deleting]);
 
     return (
         <div className="flex flex-col gap-3">
-            {!isAdding ? (
+            {formMode === 'view' ? (
                 <>
                     <div className="flex justify-between items-center">
                         <h3 className="font-semibold text-large">Schedule List</h3>
-                        <Button color="primary" onPress={() => setIsAdding(true)}>
+                        <Button color="primary" onPress={() => setFormMode('add')}>
                             Add Schedule
                         </Button>
                     </div>
@@ -271,7 +325,9 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({
             ) : (
                 <>
                     <div className="flex justify-between items-center">
-                        <h3 className="font-semibold text-large">Add New Schedule</h3>
+                        <h3 className="font-semibold text-large">
+                            {formMode === 'edit' ? 'Edit Schedule' : 'Add New Schedule'}
+                        </h3>
                         <div className="flex gap-2">
                             <Button
                                 variant="light"
@@ -287,7 +343,7 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({
                                 isLoading={submitting}
                                 isDisabled={!selectedDay || !selectedSchedule || submitting}
                             >
-                                Save
+                                {formMode === 'edit' ? 'Update' : 'Save'}
                             </Button>
                         </div>
                     </div>

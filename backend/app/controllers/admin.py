@@ -241,7 +241,9 @@ def add_employee_schedule(id_employee):  # Tambahkan parameter ini
         return jsonify({"error": str(e)}), 500
 
 
-def update_employee_schedule(employee_schedule_id):
+# PUT: http://127.0.0.1:5000/api/admin/employees/<int:id_employee>/schedules/<int:id_employee_schedule>
+
+def update_employee_schedule(id_employee, id_employee_schedule):
     try:
         data = request.get_json()
 
@@ -252,8 +254,17 @@ def update_employee_schedule(employee_schedule_id):
         if not any([work_schedules_id, daily_schedules_id]):
             return jsonify({"message": "Minimal salah satu dari work_schedules_id atau daily_schedules_id harus diisi"}), 400
 
-        # --- Cek apakah schedule yang akan diupdate ada ---
-        schedule = db.session.query(EmployeeSchedule).filter_by(id=employee_schedule_id).first()
+        # --- Cek apakah employee ada ---
+        employee = db.session.query(Employee).filter_by(id=id_employee).first()
+        if not employee:
+            return jsonify({"message": "Employee tidak ditemukan"}), 404
+
+        # --- Cek apakah schedule yang akan diupdate ada dan milik employee tersebut ---
+        schedule = db.session.query(EmployeeSchedule).filter_by(
+            id=id_employee_schedule,
+            employee_id=id_employee
+        ).first()
+        
         if not schedule:
             return jsonify({"message": "Employee schedule tidak ditemukan"}), 404
 
@@ -287,10 +298,21 @@ def update_employee_schedule(employee_schedule_id):
         return jsonify({"error": str(e)}), 500
 
 
-def delete_employee_schedule(employee_schedule_id):
+# DELETE: http://127.0.0.1:5000/api/admin/employees/<int:id_employee>/schedules/<int:id_employee_schedule>
+
+def delete_employee_schedule(id_employee, id_employee_schedule):
     try:
-        # --- Cek apakah schedule ada ---
-        schedule = db.session.query(EmployeeSchedule).filter_by(id=employee_schedule_id).first()
+        # --- Cek apakah employee ada ---
+        employee = db.session.query(Employee).filter_by(id=id_employee).first()
+        if not employee:
+            return jsonify({"message": "Employee tidak ditemukan"}), 404
+
+        # --- Cek apakah schedule ada dan milik employee tersebut ---
+        schedule = db.session.query(EmployeeSchedule).filter_by(
+            id=id_employee_schedule,
+            employee_id=id_employee
+        ).first()
+        
         if not schedule:
             return jsonify({"message": "Employee schedule tidak ditemukan"}), 404
 
