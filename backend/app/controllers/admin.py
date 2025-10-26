@@ -175,17 +175,17 @@ def get_available_schedules_for_employee(id_employee: int):
 
 
 
-def add_employee_schedule():
+def add_employee_schedule(id_employee):  # Tambahkan parameter ini
     try:
         data = request.get_json()
 
-        employee_id = data.get("employee_id")
+        employee_id = id_employee  # Gunakan dari URL parameter, bukan dari body
         work_schedules_id = data.get("work_schedules_id")
         daily_schedules_id = data.get("daily_schedules_id")
 
         # --- Validasi input dasar ---
         if not all([employee_id, work_schedules_id, daily_schedules_id]):
-            return jsonify({"message": "employee_id, work_schedules_id, dan daily_schedules_id wajib diisi"}), 400
+            return jsonify({"message": "work_schedules_id dan daily_schedules_id wajib diisi"}), 400
 
         # --- Cek apakah employee, work schedule, dan daily schedule benar-benar ada ---
         employee_exists = db.session.query(Employee.id).filter_by(id=employee_id).first()
@@ -237,7 +237,6 @@ def add_employee_schedule():
     except SQLAlchemyError as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
-
 
 
 
