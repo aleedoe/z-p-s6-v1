@@ -94,17 +94,17 @@ const DeleteIcon = (props: any) => (
     </svg>
 );
 
-const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({ 
-    schedules, 
+const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({
+    schedules,
     employeeId,
-    onScheduleAdded 
+    onScheduleAdded
 }) => {
     const [isAdding, setIsAdding] = useState(false);
     const [dailySchedules, setDailySchedules] = useState<DailySchedule[]>([]);
     const [workSchedules, setWorkSchedules] = useState<WorkSchedule[]>([]);
     const [loadingSchedules, setLoadingSchedules] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    
+
     // Form state
     const [selectedDay, setSelectedDay] = useState<string>("");
     const [selectedSchedule, setSelectedSchedule] = useState<string>("");
@@ -118,7 +118,7 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({
 
     const fetchAvailableSchedules = async () => {
         if (!employeeId) return;
-        
+
         try {
             setLoadingSchedules(true);
             const response = await employeeService.getAvailableSchedules(employeeId);
@@ -130,6 +130,16 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({
         } finally {
             setLoadingSchedules(false);
         }
+    };
+
+    const handleEdit = (schedule: EmployeeSchedule) => {
+        alert(`Edit Schedule\nEmployee Schedule ID: ${schedule.employee_schedule_id}\nDay: ${schedule.day_name}\nSchedule: ${schedule.schedule_name}`);
+        // TODO: Implement edit functionality
+    };
+
+    const handleDelete = (schedule: EmployeeSchedule) => {
+        alert(`Delete Schedule\nEmployee Schedule ID: ${schedule.employee_schedule_id}\nDay: ${schedule.day_name}\nSchedule: ${schedule.schedule_name}`);
+        // TODO: Implement delete functionality
     };
 
     const handleSave = async () => {
@@ -149,14 +159,14 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({
                 daily_schedules_id: parseInt(selectedDay),
                 work_schedules_id: parseInt(selectedSchedule)
             });
-            
+
             alert(response.message || "Schedule added successfully!");
-            
+
             // Reset form
             setSelectedDay("");
             setSelectedSchedule("");
             setIsAdding(false);
-            
+
             // Notify parent to refresh data
             if (onScheduleAdded) {
                 onScheduleAdded();
@@ -199,12 +209,18 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({
                 return (
                     <div className="relative flex justify-center gap-2">
                         <Tooltip content="Edit schedule">
-                            <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
+                            <span
+                                className="text-lg text-default-400 cursor-pointer active:opacity-50"
+                                onClick={() => handleEdit(schedule)}
+                            >
                                 <EditIcon />
                             </span>
                         </Tooltip>
                         <Tooltip color="danger" content="Delete schedule">
-                            <span className="text-lg text-danger cursor-pointer active:opacity-50">
+                            <span
+                                className="text-lg text-danger cursor-pointer active:opacity-50"
+                                onClick={() => handleDelete(schedule)}
+                            >
                                 <DeleteIcon />
                             </span>
                         </Tooltip>
@@ -257,16 +273,16 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({
                     <div className="flex justify-between items-center">
                         <h3 className="font-semibold text-large">Add New Schedule</h3>
                         <div className="flex gap-2">
-                            <Button 
-                                variant="light" 
-                                color="danger" 
+                            <Button
+                                variant="light"
+                                color="danger"
                                 onPress={handleCancel}
                                 isDisabled={submitting}
                             >
                                 Cancel
                             </Button>
-                            <Button 
-                                color="primary" 
+                            <Button
+                                color="primary"
                                 onPress={handleSave}
                                 isLoading={submitting}
                                 isDisabled={!selectedDay || !selectedSchedule || submitting}
@@ -318,7 +334,7 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({
                                                 isRequired
                                             >
                                                 {workSchedules.map((schedule) => (
-                                                    <SelectItem 
+                                                    <SelectItem
                                                         key={schedule.id.toString()}
                                                         textValue={schedule.name}
                                                     >

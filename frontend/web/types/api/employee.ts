@@ -15,6 +15,7 @@ export interface Employee {
 
 export interface EmployeeSchedule {
     schedule_id: number;
+    employee_schedule_id: number;
     schedule_name: string;
     day_id: number;
     day_name: string;
