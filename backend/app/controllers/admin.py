@@ -1,5 +1,6 @@
 from flask import jsonify, request
 from sqlalchemy.exc import SQLAlchemyError
+from datetime import datetime
 from werkzeug.security import generate_password_hash
 from ..models import db, Employee, DailySchedule, WorkSchedule, EmployeeSchedule, Attendance
 
@@ -554,3 +555,220 @@ def get_attendance_by_id(attendance_id: int):
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
+
+
+
+def get_all_work_schedulesOP():
+    """
+    Mendapatkan semua jadwal kerja
+    """
+    try:
+        schedules = (
+            db.session.query(
+                WorkSchedule.id.label("id"),
+                WorkSchedule.name.label("name"),
+                WorkSchedule.start_time.label("start_time"),
+                WorkSchedule.end_time.label("end_time"),
+                WorkSchedule.tolerance_minutes.label("tolerance_minutes"),
+                WorkSchedule.created_at.label("created_at")
+            )
+            .order_by(WorkSchedule.created_at.desc())
+            .all()
+        )
+
+        result = []
+        for s in schedules:
+            result.append({
+                "id": s.id,
+                "name": s.name,
+                "start_time": s.start_time.strftime("%H:%M"),
+                "end_time": s.end_time.strftime("%H:%M"),
+                "tolerance_minutes": s.tolerance_minutes,
+                "created_at": s.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            })
+
+        return jsonify({
+            "total_schedules": len(result),
+            "work_schedules": result
+        }), 200
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+def get_work_schedule_by_idOP(id_schedule: int):
+    """
+    Mendapatkan detail jadwal kerja berdasarkan ID
+    """
+    try:
+        schedule = (
+            db.session.query(
+                WorkSchedule.id.label("id"),
+                WorkSchedule.name.label("name"),
+                WorkSchedule.start_time.label("start_time"),
+                WorkSchedule.end_time.label("end_time"),
+                WorkSchedule.tolerance_minutes.label("tolerance_minutes"),
+                WorkSchedule.created_at.label("created_at"),
+                WorkSchedule.updated_at.label("updated_at")
+            )
+            .filter(WorkSchedule.id == id_schedule)
+            .first()
+        )
+
+        if not schedule:
+            return jsonify({"message": "Work schedule not found"}), 404
+
+        # Hitung jumlah karyawan yang menggunakan jadwal ini
+        employee_count = (
+            db.session.query(EmployeeSchedule)
+            .filter(EmployeeSchedule.work_schedules_id == id_schedule)
+            .count()
+        )
+
+        result = {
+            "id": schedule.id,
+            "name": schedule.name,
+            "start_time": schedule.start_time.strftime("%H:%M"),
+            "end_time": schedule.end_time.strftime("%H:%M"),
+            "tolerance_minutes": schedule.tolerance_minutes,
+            "created_at": schedule.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "updated_at": schedule.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "employee_count": employee_count
+        }
+
+        return jsonify(result), 200
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+def create_work_scheduleOP():
+    """
+    Membuat jadwal kerja baru
+    """
+    try:
+        data = request.get_json()
+
+        # Validasi field wajib
+        required_fields = ["name", "start_time", "end_time"]
+        if not all(field in data for field in required_fields):
+            return jsonify({"message": "Missing required fields"}), 400
+
+        # Cek duplikasi nama jadwal
+        if WorkSchedule.query.filter(WorkSchedule.name == data["name"]).first():
+            return jsonify({"message": "Work schedule with this name already exists"}), 409
+
+        # Parse waktu dari string HH:MM ke time object
+        try:
+            start_time = datetime.strptime(data["start_time"], "%H:%M").time()
+            end_time = datetime.strptime(data["end_time"], "%H:%M").time()
+        except ValueError:
+            return jsonify({"message": "Invalid time format. Use HH:MM format"}), 400
+
+        # Validasi waktu mulai harus lebih awal dari waktu selesai
+        if start_time >= end_time:
+            return jsonify({"message": "Start time must be earlier than end time"}), 400
+
+        new_schedule = WorkSchedule(
+            name=data["name"],
+            start_time=start_time,
+            end_time=end_time,
+            tolerance_minutes=data.get("tolerance_minutes", 0)
+        )
+
+        db.session.add(new_schedule)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Work schedule created successfully",
+            "id": new_schedule.id
+        }), 201
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+def update_work_scheduleOP(id_schedule: int):
+    """
+    Mengupdate jadwal kerja
+    """
+    try:
+        data = request.get_json()
+        schedule = WorkSchedule.query.get(id_schedule)
+
+        if not schedule:
+            return jsonify({"message": "Work schedule not found"}), 404
+
+        # Cek duplikasi nama jika ada perubahan
+        if "name" in data and data["name"] != schedule.name:
+            if WorkSchedule.query.filter(WorkSchedule.name == data["name"]).first():
+                return jsonify({"message": "Work schedule name already exists"}), 409
+
+        # Update nama jika ada
+        if "name" in data:
+            schedule.name = data["name"]
+
+        # Update start_time jika ada
+        if "start_time" in data:
+            try:
+                schedule.start_time = datetime.strptime(data["start_time"], "%H:%M").time()
+            except ValueError:
+                return jsonify({"message": "Invalid start_time format. Use HH:MM format"}), 400
+
+        # Update end_time jika ada
+        if "end_time" in data:
+            try:
+                schedule.end_time = datetime.strptime(data["end_time"], "%H:%M").time()
+            except ValueError:
+                return jsonify({"message": "Invalid end_time format. Use HH:MM format"}), 400
+
+        # Validasi waktu mulai harus lebih awal dari waktu selesai
+        if schedule.start_time >= schedule.end_time:
+            return jsonify({"message": "Start time must be earlier than end time"}), 400
+
+        # Update tolerance_minutes jika ada
+        if "tolerance_minutes" in data:
+            schedule.tolerance_minutes = data["tolerance_minutes"]
+
+        db.session.commit()
+
+        return jsonify({"message": "Work schedule updated successfully"}), 200
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+def delete_work_scheduleOP(id_schedule: int):
+    """
+    Menghapus jadwal kerja
+    """
+    try:
+        schedule = WorkSchedule.query.get(id_schedule)
+
+        if not schedule:
+            return jsonify({"message": "Work schedule not found"}), 404
+
+        # Cek apakah jadwal sedang digunakan oleh karyawan
+        employee_count = (
+            db.session.query(EmployeeSchedule)
+            .filter(EmployeeSchedule.work_schedules_id == id_schedule)
+            .count()
+        )
+
+        if employee_count > 0:
+            return jsonify({
+                "message": f"Cannot delete work schedule. It is currently assigned to {employee_count} employee(s)"
+            }), 409
+
+        db.session.delete(schedule)
+        db.session.commit()
+
+        return jsonify({"message": "Work schedule deleted successfully"}), 200
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
