@@ -114,6 +114,7 @@ def get_employee_by_id(id_employee: int):
 def get_available_schedules_for_employee(id_employee: int):
     try:
         # --- Ambil daftar daily_schedules_id yang sudah dimiliki oleh employee ---
+        # (Masih bisa disimpan kalau nanti dibutuhkan)
         assigned_daily_schedules = (
             db.session.query(EmployeeSchedule.daily_schedules_id)
             .filter(EmployeeSchedule.employee_id == id_employee)
@@ -133,13 +134,12 @@ def get_available_schedules_for_employee(id_employee: int):
             .all()
         )
 
-        # --- Ambil DailySchedule yang belum dimiliki oleh employee ---
+        # --- Ambil semua DailySchedule (tanpa filter) ---
         available_daily_schedules = (
             db.session.query(
                 DailySchedule.id,
                 DailySchedule.name
             )
-            .filter(~DailySchedule.id.in_(assigned_daily_schedules.select()))
             .order_by(DailySchedule.id.asc())
             .all()
         )
@@ -174,6 +174,7 @@ def get_available_schedules_for_employee(id_employee: int):
     except SQLAlchemyError as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
 
 
 
