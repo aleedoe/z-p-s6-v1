@@ -44,3 +44,21 @@ export interface PaginationParams {
     sort?: string;
     order?: 'asc' | 'desc';
 }
+
+export interface DailySchedule {
+    id: number;
+    name: string;
+}
+
+export interface WorkSchedule {
+    id: number;
+    name: string;
+    start_time: string;
+    end_time: string;
+    tolerance_minutes: number;
+}
+
+export interface AvailableSchedulesResponse {
+    daily_schedules: DailySchedule[];
+    work_schedules: WorkSchedule[];
+}
