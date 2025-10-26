@@ -1,4 +1,4 @@
-import { Employee, EmployeesResponse, PaginationParams, EmployeeDetailResponse } from "@/types/api/employee";
+import { Employee, EmployeesResponse, PaginationParams, EmployeeDetailResponse, AvailableSchedulesResponse } from "@/types/api/employee";
 import { BaseService } from "./base.service";
 
 class EmployeeService extends BaseService {
@@ -38,10 +38,25 @@ class EmployeeService extends BaseService {
         return this.delete<{ message: string }>(`${this.endpoint}/${id}`);
     }
 
-
     async search(query: string): Promise<EmployeesResponse> {
         return this.get<EmployeesResponse>(`${this.endpoint}/search`, {
             params: { q: query }
+        });
+    }
+
+    // ====== NEW METHODS FOR SCHEDULES ======
+    async getAvailableSchedules(employeeId: number): Promise<AvailableSchedulesResponse> {
+        return this.get<AvailableSchedulesResponse>(`${this.endpoint}/available-schedules/${employeeId}`);
+    }
+
+    async addEmployeeSchedule(employeeId: number, data: {
+        daily_schedules_id: number;
+        work_schedules_id: number;
+    }): Promise<{ message: string; data: any }> {
+        return this.post<{ message: string; data: any }>(`${this.endpoint}/${employeeId}/schedules`, {
+            employee_id: employeeId,
+            work_schedules_id: data.work_schedules_id,
+            daily_schedules_id: data.daily_schedules_id
         });
     }
 }
