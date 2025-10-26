@@ -1,15 +1,18 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/table";
-import { EmployeeSchedule } from "@/types/api/employee";
+import { EmployeeSchedule, DailySchedule, WorkSchedule } from "@/types/api/employee";
 import { Tooltip } from "@heroui/tooltip";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Input } from "@heroui/input"; // kalau kamu mau pakai input di form
-import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@heroui/dropdown";
+import { Select, SelectItem } from "@heroui/select";
+import { Spinner } from "@heroui/spinner";
+import { employeeService } from "@/services/employee.service";
 
 interface TableEmployeeScheduleProps {
     schedules: EmployeeSchedule[];
+    employeeId?: number;
+    onScheduleAdded?: () => void;
 }
 
 const columns = [
@@ -91,8 +94,92 @@ const DeleteIcon = (props: any) => (
     </svg>
 );
 
-const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({ schedules }) => {
+const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({ 
+    schedules, 
+    employeeId,
+    onScheduleAdded 
+}) => {
     const [isAdding, setIsAdding] = useState(false);
+    const [dailySchedules, setDailySchedules] = useState<DailySchedule[]>([]);
+    const [workSchedules, setWorkSchedules] = useState<WorkSchedule[]>([]);
+    const [loadingSchedules, setLoadingSchedules] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    
+    // Form state
+    const [selectedDay, setSelectedDay] = useState<string>("");
+    const [selectedSchedule, setSelectedSchedule] = useState<string>("");
+
+    // Fetch available schedules when form is opened
+    useEffect(() => {
+        if (isAdding && employeeId) {
+            fetchAvailableSchedules();
+        }
+    }, [isAdding, employeeId]);
+
+    const fetchAvailableSchedules = async () => {
+        if (!employeeId) return;
+        
+        try {
+            setLoadingSchedules(true);
+            const response = await employeeService.getAvailableSchedules(employeeId);
+            setDailySchedules(response.daily_schedules);
+            setWorkSchedules(response.work_schedules);
+        } catch (error: any) {
+            console.error('Error fetching available schedules:', error);
+            alert(`Failed to load schedules: ${error.message}`);
+        } finally {
+            setLoadingSchedules(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!selectedDay || !selectedSchedule) {
+            alert("Please select both day and schedule");
+            return;
+        }
+
+        if (!employeeId) {
+            alert("Employee ID is missing");
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+            const response = await employeeService.addEmployeeSchedule(employeeId, {
+                daily_schedules_id: parseInt(selectedDay),
+                work_schedules_id: parseInt(selectedSchedule)
+            });
+            
+            alert(response.message || "Schedule added successfully!");
+            
+            // Reset form
+            setSelectedDay("");
+            setSelectedSchedule("");
+            setIsAdding(false);
+            
+            // Notify parent to refresh data
+            if (onScheduleAdded) {
+                onScheduleAdded();
+            }
+        } catch (error: any) {
+            console.error('Error adding schedule:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'Failed to add schedule';
+            alert(`Failed to add schedule: ${errorMessage}`);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleCancel = () => {
+        setSelectedDay("");
+        setSelectedSchedule("");
+        setIsAdding(false);
+    };
+
+    // Get selected work schedule details for preview
+    const selectedWorkSchedule = workSchedules.find(
+        ws => ws.id.toString() === selectedSchedule
+    );
 
     const renderCell = React.useCallback((schedule: EmployeeSchedule, columnKey: string) => {
         const cellValue = schedule[columnKey as keyof EmployeeSchedule];
@@ -127,16 +214,9 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({ schedules
                 return cellValue;
         }
     }, []);
-    const [selectedKeys, setSelectedKeys] = React.useState(new Set(["text"]));
-
-    const selectedValue = React.useMemo(
-        () => Array.from(selectedKeys).join(", ").replace(/_/g, ""),
-        [selectedKeys],
-    );
 
     return (
         <div className="flex flex-col gap-3">
-            {/* ===== Kondisional tampilan ===== */}
             {!isAdding ? (
                 <>
                     <div className="flex justify-between items-center">
@@ -147,22 +227,28 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({ schedules
                     </div>
                     <Card className="shadow-none">
                         <CardBody>
-                            <Table aria-label="Employee schedule table">
-                                <TableHeader columns={columns}>
-                                    {(column) => (
-                                        <TableColumn key={column.uid}>{column.name}</TableColumn>
-                                    )}
-                                </TableHeader>
-                                <TableBody items={schedules}>
-                                    {(item) => (
-                                        <TableRow key={`${item.day_id}-${item.schedule_id}`}>
-                                            {(columnKey) => (
-                                                <TableCell>{renderCell(item, columnKey as string)}</TableCell>
-                                            )}
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
+                            {schedules.length === 0 ? (
+                                <div className="text-center py-8 text-default-400">
+                                    No schedules assigned yet
+                                </div>
+                            ) : (
+                                <Table aria-label="Employee schedule table">
+                                    <TableHeader columns={columns}>
+                                        {(column) => (
+                                            <TableColumn key={column.uid}>{column.name}</TableColumn>
+                                        )}
+                                    </TableHeader>
+                                    <TableBody items={schedules}>
+                                        {(item) => (
+                                            <TableRow key={`${item.day_id}-${item.schedule_id}`}>
+                                                {(columnKey) => (
+                                                    <TableCell>{renderCell(item, columnKey as string)}</TableCell>
+                                                )}
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            )}
                         </CardBody>
                     </Card>
                 </>
@@ -171,14 +257,20 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({ schedules
                     <div className="flex justify-between items-center">
                         <h3 className="font-semibold text-large">Add New Schedule</h3>
                         <div className="flex gap-2">
-                            <Button variant="light" color="danger" onPress={() => setIsAdding(false)}>
-                                Back
+                            <Button 
+                                variant="light" 
+                                color="danger" 
+                                onPress={handleCancel}
+                                isDisabled={submitting}
+                            >
+                                Cancel
                             </Button>
-                            <Button color="primary" onPress={() => {
-                                // Simulasikan save, nanti kamu bisa panggil API di sini
-                                console.log("Schedule saved!");
-                                setIsAdding(false);
-                            }}>
+                            <Button 
+                                color="primary" 
+                                onPress={handleSave}
+                                isLoading={submitting}
+                                isDisabled={!selectedDay || !selectedSchedule || submitting}
+                            >
                                 Save
                             </Button>
                         </div>
@@ -186,61 +278,81 @@ const TableEmployeeSchedule: React.FC<TableEmployeeScheduleProps> = ({ schedules
 
                     <Card className="shadow-none mt-2">
                         <CardBody className="flex flex-col gap-4">
-                            {/* Contoh form input jadwal */}
-                            <div className="flex flex-row gap-2">
-                                <div className="basis-1/2">
-                                    <div className="flex flex-col">
-                                        <label className="text-sm font-medium">Hari</label>
-                                        <Dropdown>
-                                            <DropdownTrigger>
-                                                <Button className="capitalize" variant="bordered">
-                                                    {selectedValue}
-                                                </Button>
-                                            </DropdownTrigger>
-                                            <DropdownMenu
-                                                disallowEmptySelection
-                                                aria-label="Single selection example"
-                                                selectedKeys={selectedKeys}
-                                                selectionMode="single"
-                                                variant="flat"
-                                            // onSelectionChange={setSelectedKeys}
-                                            >
-                                                <DropdownItem key="text">Text</DropdownItem>
-                                                <DropdownItem key="number">Number</DropdownItem>
-                                                <DropdownItem key="date">Date</DropdownItem>
-                                                <DropdownItem key="single_date">Single Date</DropdownItem>
-                                                <DropdownItem key="iteration">Iteration</DropdownItem>
-                                            </DropdownMenu>
-                                        </Dropdown>
-                                    </div>
+                            {loadingSchedules ? (
+                                <div className="flex justify-center py-8">
+                                    <Spinner label="Loading available schedules..." />
                                 </div>
-                                <div className="basis-1/2">
-                                    <div className="flex flex-col">
-                                        <label className="text-sm font-medium">Jam</label>
-                                        <Dropdown>
-                                            <DropdownTrigger>
-                                                <Button className="capitalize" variant="bordered">
-                                                    {selectedValue}
-                                                </Button>
-                                            </DropdownTrigger>
-                                            <DropdownMenu
-                                                disallowEmptySelection
-                                                aria-label="Single selection example"
-                                                selectedKeys={selectedKeys}
-                                                selectionMode="single"
-                                                variant="flat"
-                                            // onSelectionChange={setSelectedKeys}
+                            ) : (
+                                <>
+                                    <div className="flex flex-col md:flex-row gap-4">
+                                        {/* Day Selector */}
+                                        <div className="flex-1">
+                                            <Select
+                                                label="Hari"
+                                                placeholder="Pilih hari"
+                                                selectedKeys={selectedDay ? [selectedDay] : []}
+                                                onSelectionChange={(keys) => {
+                                                    const value = Array.from(keys)[0] as string;
+                                                    setSelectedDay(value);
+                                                }}
+                                                isRequired
                                             >
-                                                <DropdownItem key="text">Text</DropdownItem>
-                                                <DropdownItem key="number">Number</DropdownItem>
-                                                <DropdownItem key="date">Date</DropdownItem>
-                                                <DropdownItem key="single_date">Single Date</DropdownItem>
-                                                <DropdownItem key="iteration">Iteration</DropdownItem>
-                                            </DropdownMenu>
-                                        </Dropdown>
+                                                {dailySchedules.map((day) => (
+                                                    <SelectItem key={day.id.toString()}>
+                                                        {day.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </Select>
+                                        </div>
+
+                                        {/* Work Schedule Selector */}
+                                        <div className="flex-1">
+                                            <Select
+                                                label="Jadwal Kerja"
+                                                placeholder="Pilih jadwal kerja"
+                                                selectedKeys={selectedSchedule ? [selectedSchedule] : []}
+                                                onSelectionChange={(keys) => {
+                                                    const value = Array.from(keys)[0] as string;
+                                                    setSelectedSchedule(value);
+                                                }}
+                                                isRequired
+                                            >
+                                                {workSchedules.map((schedule) => (
+                                                    <SelectItem 
+                                                        key={schedule.id.toString()}
+                                                        textValue={schedule.name}
+                                                    >
+                                                        {schedule.name} ({schedule.start_time} - {schedule.end_time})
+                                                    </SelectItem>
+                                                ))}
+                                            </Select>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
+
+                                    {/* Schedule Details Preview */}
+                                    {selectedWorkSchedule && (
+                                        <Card className="bg-default-100">
+                                            <CardBody>
+                                                <h4 className="text-sm font-semibold mb-2">Schedule Details:</h4>
+                                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                                    <div>
+                                                        <span className="text-default-500">Start Time:</span>
+                                                        <p className="font-medium">{selectedWorkSchedule.start_time}</p>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-default-500">End Time:</span>
+                                                        <p className="font-medium">{selectedWorkSchedule.end_time}</p>
+                                                    </div>
+                                                    <div className="col-span-2">
+                                                        <span className="text-default-500">Tolerance:</span>
+                                                        <p className="font-medium">{selectedWorkSchedule.tolerance_minutes} minutes</p>
+                                                    </div>
+                                                </div>
+                                            </CardBody>
+                                        </Card>
+                                    )}
+                                </>
+                            )}
                         </CardBody>
                     </Card>
                 </>

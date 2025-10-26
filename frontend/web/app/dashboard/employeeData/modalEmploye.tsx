@@ -65,7 +65,14 @@ const ModalEmployee: React.FC<ModalEmployeeProps> = ({
                                     </Tab>
                                     <Tab key="schedules" title="Schedules">
                                         <ScrollShadow hideScrollBar className="w-full max-h-[50vh]">
-                                            <TableEmployeeSchedule schedules={schedules} />
+                                            <TableEmployeeSchedule
+                                                schedules={schedules}
+                                                employeeId={employee?.id}
+                                                onScheduleAdded={() => {
+                                                    // Refresh employee data after adding schedule
+                                                    if (onSuccess) onSuccess();
+                                                }}
+                                            />
                                         </ScrollShadow>
                                     </Tab>
                                 </Tabs>
