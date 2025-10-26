@@ -44,11 +44,18 @@ class EmployeeService extends BaseService {
         });
     }
 
-    // ====== NEW METHODS FOR SCHEDULES ======
+    // ====== SCHEDULE MANAGEMENT METHODS ======
+
+    /**
+     * Get available schedules for an employee
+     */
     async getAvailableSchedules(employeeId: number): Promise<AvailableSchedulesResponse> {
         return this.get<AvailableSchedulesResponse>(`${this.endpoint}/available-schedules/${employeeId}`);
     }
 
+    /**
+     * Add a new schedule to an employee
+     */
     async addEmployeeSchedule(employeeId: number, data: {
         daily_schedules_id: number;
         work_schedules_id: number;
@@ -58,6 +65,30 @@ class EmployeeService extends BaseService {
             work_schedules_id: data.work_schedules_id,
             daily_schedules_id: data.daily_schedules_id
         });
+    }
+
+    /**
+     * Update an existing employee schedule
+     */
+    async updateEmployeeSchedule(
+        employeeId: number,
+        scheduleId: number,
+        data: {
+            daily_schedules_id?: number;
+            work_schedules_id?: number;
+        }
+    ): Promise<{ message: string; data: any }> {
+        return this.put<{ message: string; data: any }>(
+            `${this.endpoint}/${employeeId}/schedules/${scheduleId}`,
+            data
+        );
+    }
+
+    /**
+     * Delete an employee schedule
+     */
+    async deleteEmployeeSchedule(employeeId: number, scheduleId: number): Promise<{ message: string }> {
+        return this.delete<{ message: string }>(`${this.endpoint}/${employeeId}/schedules/${scheduleId}`);
     }
 }
 
