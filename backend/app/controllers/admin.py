@@ -242,8 +242,6 @@ def add_employee_schedule(id_employee):  # Tambahkan parameter ini
         return jsonify({"error": str(e)}), 500
 
 
-# PUT: http://127.0.0.1:5000/api/admin/employees/<int:id_employee>/schedules/<int:id_employee_schedule>
-
 def update_employee_schedule(id_employee, id_employee_schedule):
     try:
         data = request.get_json()
@@ -299,7 +297,6 @@ def update_employee_schedule(id_employee, id_employee_schedule):
         return jsonify({"error": str(e)}), 500
 
 
-# DELETE: http://127.0.0.1:5000/api/admin/employees/<int:id_employee>/schedules/<int:id_employee_schedule>
 
 def delete_employee_schedule(id_employee, id_employee_schedule):
     try:
