@@ -1,7 +1,186 @@
-from flask import jsonify
+from flask import jsonify, request
 from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.security import check_password_hash
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from datetime import datetime, timedelta
 from ..models import db, Employee, EmployeeSchedule, WorkSchedule, Attendance, DailySchedule
+
+
+def login():
+    """
+    Endpoint login untuk employee
+    POST /api/auth/login
+    Body: { "email": "...", "password": "..." }
+    """
+    try:
+        data = request.get_json()
+        
+        # Validasi input
+        if not data or not data.get('email') or not data.get('password'):
+            return jsonify({"message": "Email dan password harus diisi"}), 400
+        
+        email = data.get('email')
+        password = data.get('password')
+        
+        # Cari employee berdasarkan email
+        employee = Employee.query.filter_by(email=email).first()
+        
+        if not employee:
+            return jsonify({"message": "Email atau password salah"}), 401
+        
+        # Verifikasi password
+        if not check_password_hash(employee.password, password):
+            return jsonify({"message": "Email atau password salah"}), 401
+        
+        # Generate JWT token (expired dalam 7 hari)
+        access_token = create_access_token(
+            identity={'id': employee.id, 'role': 'employee'},
+            expires_delta=timedelta(days=7)
+        )
+        
+        # Return data employee + token
+        return jsonify({
+            "message": "Login berhasil",
+            "token": access_token,
+            "id": employee.id,
+            "employee_id": employee.id,
+            "name": employee.name,
+            "email": employee.email,
+            "position": employee.position
+        }), 200
+        
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"message": "Database error", "error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"message": "Internal server error", "error": str(e)}), 500
+
+
+def register():
+    """
+    Endpoint register employee baru (opsional)
+    POST /api/auth/register
+    """
+    try:
+        data = request.get_json()
+        
+        # Validasi required fields
+        required_fields = ['nik', 'name', 'gender', 'position', 'email', 'password']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({"message": f"{field} harus diisi"}), 400
+        
+        # Cek apakah email atau NIK sudah ada
+        if Employee.query.filter_by(email=data['email']).first():
+            return jsonify({"message": "Email sudah terdaftar"}), 409
+        
+        if Employee.query.filter_by(nik=data['nik']).first():
+            return jsonify({"message": "NIK sudah terdaftar"}), 409
+        
+        # Validasi gender
+        if data['gender'] not in ['Male', 'Female', 'Other']:
+            return jsonify({"message": "Gender tidak valid"}), 400
+        
+        # Hash password
+        from werkzeug.security import generate_password_hash
+        hashed_password = generate_password_hash(data['password'], method='pbkdf2:sha256')
+        
+        # Buat employee baru
+        new_employee = Employee(
+            nik=data['nik'],
+            name=data['name'],
+            gender=data['gender'],
+            position=data['position'],
+            email=data['email'],
+            password=hashed_password
+        )
+        
+        db.session.add(new_employee)
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Registrasi berhasil",
+            "employee_id": new_employee.id,
+            "name": new_employee.name,
+            "email": new_employee.email
+        }), 201
+        
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"message": "Database error", "error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"message": "Internal server error", "error": str(e)}), 500
+
+
+@jwt_required()
+def verify_token():
+    """
+    Endpoint untuk verify JWT token
+    GET /api/auth/verify
+    Header: Authorization: Bearer <token>
+    """
+    try:
+        current_user = get_jwt_identity()
+        employee_id = current_user.get('id')
+        
+        employee = Employee.query.get(employee_id)
+        if not employee:
+            return jsonify({"message": "User tidak ditemukan"}), 404
+        
+        return jsonify({
+            "message": "Token valid",
+            "id": employee.id,
+            "employee_id": employee.id,
+            "name": employee.name,
+            "email": employee.email,
+            "position": employee.position
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"message": "Token tidak valid", "error": str(e)}), 401
+
+
+@jwt_required()
+def change_password():
+    """
+    Endpoint untuk ganti password
+    POST /api/auth/change-password
+    Body: { "old_password": "...", "new_password": "..." }
+    """
+    try:
+        current_user = get_jwt_identity()
+        employee_id = current_user.get('id')
+        
+        data = request.get_json()
+        old_password = data.get('old_password')
+        new_password = data.get('new_password')
+        
+        if not old_password or not new_password:
+            return jsonify({"message": "Password lama dan baru harus diisi"}), 400
+        
+        if len(new_password) < 6:
+            return jsonify({"message": "Password baru minimal 6 karakter"}), 400
+        
+        employee = Employee.query.get(employee_id)
+        if not employee:
+            return jsonify({"message": "User tidak ditemukan"}), 404
+        
+        # Verifikasi password lama
+        if not check_password_hash(employee.password, old_password):
+            return jsonify({"message": "Password lama tidak sesuai"}), 401
+        
+        # Update password
+        from werkzeug.security import generate_password_hash
+        employee.password = generate_password_hash(new_password, method='pbkdf2:sha256')
+        db.session.commit()
+        
+        return jsonify({"message": "Password berhasil diubah"}), 200
+        
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"message": "Database error", "error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"message": "Internal server error", "error": str(e)}), 500
 
 def get_employee_today_status(id_employee: int):
     try:
