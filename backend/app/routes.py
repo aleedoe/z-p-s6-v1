@@ -30,6 +30,7 @@ admin_bp.route('/work-schedulesOP/<int:id_schedule>', methods=['DELETE'])(delete
 
 
 
-from .controllers.employee import get_employee_today_status
+from .controllers.employee import get_employee_today_status, get_employee_schedules
 
 employee_bp.route('/home/today-status/<int:id_employee>', methods=['GET'])(get_employee_today_status)
+employee_bp.route('/schedules/<int:employee_id>', methods=['GET'])(get_employee_schedules)

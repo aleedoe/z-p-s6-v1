@@ -76,3 +76,52 @@ def get_employee_today_status(id_employee: int):
     except SQLAlchemyError as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+
+
+def get_employee_schedules(employee_id):
+    # Query join 3 tabel
+    schedules = (
+        db.session.query(
+            EmployeeSchedule.id,
+            DailySchedule.name.label('day_name'),
+            WorkSchedule.name.label('shift_name'),
+            WorkSchedule.start_time,
+            WorkSchedule.end_time,
+            WorkSchedule.tolerance_minutes
+        )
+        .join(DailySchedule, EmployeeSchedule.daily_schedules_id == DailySchedule.id)
+        .join(WorkSchedule, EmployeeSchedule.work_schedules_id == WorkSchedule.id)
+        .filter(EmployeeSchedule.employee_id == employee_id)
+        .order_by(DailySchedule.id.asc())
+        .all()
+    )
+
+    # Kalau gak ada jadwal
+    if not schedules:
+        return jsonify({
+            "message": f"Tidak ada jadwal untuk employee_id {employee_id}",
+            "data": []
+        }), 200
+
+    # Format hasil
+    result = [
+        {
+            "schedule_id": s.id,
+            "day_name": s.day_name,
+            "shift_name": s.shift_name,
+            "start_time": s.start_time.strftime("%H:%M"),
+            "end_time": s.end_time.strftime("%H:%M"),
+            "tolerance_minutes": s.tolerance_minutes
+        }
+        for s in schedules
+    ]
+
+    return jsonify({
+        "employee_id": employee_id,
+        "total_schedules": len(result),
+        "data": result
+    }), 200
+
+
+
