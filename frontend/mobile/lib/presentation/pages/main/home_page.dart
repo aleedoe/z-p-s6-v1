@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/presentation/qr/scan_qr_page.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/constants/strings.dart';
 import '../../../core/utils/date_helper.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/home_provider.dart';
-import '../qr/scan_qr_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
