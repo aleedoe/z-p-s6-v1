@@ -182,6 +182,8 @@ def change_password():
     except Exception as e:
         return jsonify({"message": "Internal server error", "error": str(e)}), 500
 
+
+
 def get_employee_today_status(id_employee: int):
     try:
         # 1️⃣ Pastikan karyawan ada
@@ -397,3 +399,227 @@ def get_employee_detail(employee_id):
     }
 
     return jsonify(employee_data), 200
+
+
+
+
+@jwt_required()
+def scan_qr_attendance():
+    """
+    Endpoint untuk scan QR dan catat absensi
+    POST /api/attendance/scan
+    Body: { "qr_data": "...", "employee_id": ... }
+    Header: Authorization: Bearer <token>
+    """
+    try:
+        # Ambil data dari request
+        data = request.get_json()
+        qr_data = data.get('qr_data')
+        employee_id = data.get('employee_id')
+        
+        # Validasi input
+        if not qr_data or not employee_id:
+            return jsonify({"message": "QR data dan employee ID harus diisi"}), 400
+        
+        # Verifikasi JWT identity
+        current_user = get_jwt_identity()
+        if current_user.get('id') != employee_id:
+            return jsonify({"message": "Unauthorized: Employee ID tidak sesuai"}), 403
+        
+        # Pastikan employee ada
+        employee = Employee.query.get(employee_id)
+        if not employee:
+            return jsonify({"message": "Employee tidak ditemukan"}), 404
+        
+        # Validasi QR Code (opsional: sesuaikan dengan format QR Anda)
+        # Contoh: QR harus berisi keyword tertentu
+        if "ATTENDANCE" not in qr_data.upper():
+            return jsonify({"message": "QR Code tidak valid"}), 400
+        
+        # Dapatkan hari sekarang
+        hari_mapping = {
+            "Monday": "Senin",
+            "Tuesday": "Selasa",
+            "Wednesday": "Rabu",
+            "Thursday": "Kamis",
+            "Friday": "Jumat",
+            "Saturday": "Sabtu",
+            "Sunday": "Minggu",
+        }
+        today_en = datetime.now().strftime("%A")
+        today_name = hari_mapping[today_en]
+        today_date = datetime.now().date()
+        current_time = datetime.now().time()
+        
+        # Cek apakah karyawan punya jadwal hari ini
+        schedule = (
+            db.session.query(
+                WorkSchedule.start_time,
+                WorkSchedule.end_time,
+                WorkSchedule.tolerance_minutes,
+                WorkSchedule.name.label("shift_name")
+            )
+            .join(EmployeeSchedule, EmployeeSchedule.work_schedules_id == WorkSchedule.id)
+            .join(DailySchedule, DailySchedule.id == EmployeeSchedule.daily_schedules_id)
+            .filter(EmployeeSchedule.employee_id == employee_id)
+            .filter(DailySchedule.name == today_name)
+            .first()
+        )
+        
+        if not schedule:
+            return jsonify({
+                "message": f"Anda tidak memiliki jadwal kerja pada hari {today_name}"
+            }), 400
+        
+        # Cek apakah sudah absen hari ini
+        existing_attendance = (
+            Attendance.query
+            .filter(
+                Attendance.employee_id == employee_id,
+                db.func.date(Attendance.date) == today_date
+            )
+            .first()
+        )
+        
+        if existing_attendance:
+            return jsonify({
+                "message": "Anda sudah melakukan absensi hari ini",
+                "attendance_id": existing_attendance.id,
+                "time": existing_attendance.created_at.strftime("%H:%M:%S")
+            }), 409
+        
+        # Cek apakah masih dalam toleransi waktu
+        start_time = schedule.start_time
+        tolerance = schedule.tolerance_minutes
+        
+        # Hitung waktu maksimal absen (start_time + tolerance)
+        max_time_datetime = datetime.combine(today_date, start_time) + timedelta(minutes=tolerance)
+        max_time = max_time_datetime.time()
+        
+        # Status absensi
+        status = "tepat_waktu"
+        if current_time > max_time:
+            status = "terlambat"
+        
+        # Simpan absensi
+        new_attendance = Attendance(
+            employee_id=employee_id,
+            date=datetime.now()
+        )
+        
+        db.session.add(new_attendance)
+        db.session.commit()
+        
+        return jsonify({
+            "message": f"Absensi berhasil! Status: {status}",
+            "attendance_id": new_attendance.id,
+            "employee_name": employee.name,
+            "shift": schedule.shift_name,
+            "attendance_time": new_attendance.created_at.strftime("%H:%M:%S"),
+            "scheduled_time": start_time.strftime("%H:%M"),
+            "status": status
+        }), 201
+        
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"message": "Database error", "error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"message": "Internal server error", "error": str(e)}), 500
+
+
+@jwt_required()
+def delete_attendance(attendance_id):
+    """
+    Endpoint untuk hapus absensi (admin only atau untuk koreksi)
+    DELETE /api/attendance/<id>
+    """
+    try:
+        current_user = get_jwt_identity()
+        
+        attendance = Attendance.query.get(attendance_id)
+        if not attendance:
+            return jsonify({"message": "Attendance tidak ditemukan"}), 404
+        
+        # Verifikasi ownership (employee hanya bisa hapus absensinya sendiri)
+        if current_user.get('id') != attendance.employee_id and current_user.get('role') != 'admin':
+            return jsonify({"message": "Unauthorized"}), 403
+        
+        db.session.delete(attendance)
+        db.session.commit()
+        
+        return jsonify({"message": "Attendance berhasil dihapus"}), 200
+        
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"message": "Database error", "error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"message": "Internal server error", "error": str(e)}), 500
+
+
+@jwt_required()
+def get_attendance_detail(attendance_id):
+    """
+    Endpoint untuk mendapatkan detail absensi
+    GET /api/attendance/<id>
+    """
+    try:
+        attendance = Attendance.query.get(attendance_id)
+        if not attendance:
+            return jsonify({"message": "Attendance tidak ditemukan"}), 404
+        
+        employee = Employee.query.get(attendance.employee_id)
+        
+        return jsonify({
+            "attendance_id": attendance.id,
+            "employee_id": attendance.employee_id,
+            "employee_name": employee.name if employee else None,
+            "date": attendance.date.strftime("%Y-%m-%d"),
+            "time": attendance.date.strftime("%H:%M:%S"),
+            "created_at": attendance.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"message": "Internal server error", "error": str(e)}), 500
+
+
+def get_all_attendance_today():
+    """
+    Endpoint untuk mendapatkan semua absensi hari ini (untuk admin/monitoring)
+    GET /api/attendance/today
+    """
+    try:
+        today_date = datetime.now().date()
+        
+        attendances = (
+            db.session.query(
+                Attendance.id,
+                Attendance.employee_id,
+                Employee.name.label('employee_name'),
+                Attendance.date,
+                Attendance.created_at
+            )
+            .join(Employee, Attendance.employee_id == Employee.id)
+            .filter(db.func.date(Attendance.date) == today_date)
+            .order_by(Attendance.created_at.desc())
+            .all()
+        )
+        
+        result = [
+            {
+                "attendance_id": att.id,
+                "employee_id": att.employee_id,
+                "employee_name": att.employee_name,
+                "date": att.date.strftime("%Y-%m-%d"),
+                "time": att.created_at.strftime("%H:%M:%S")
+            }
+            for att in attendances
+        ]
+        
+        return jsonify({
+            "date": today_date.strftime("%Y-%m-%d"),
+            "total_attendance": len(result),
+            "data": result
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"message": "Internal server error", "error": str(e)}), 500
