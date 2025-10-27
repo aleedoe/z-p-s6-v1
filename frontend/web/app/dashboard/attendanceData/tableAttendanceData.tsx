@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
-import { Chip } from "@heroui/chip";
 import { Spinner } from "@heroui/spinner";
 import { Attendance } from "@/types/api/attendance";
 import { attendanceService } from "@/services/attendance.service";
@@ -10,9 +9,8 @@ import { attendanceService } from "@/services/attendance.service";
 const columns = [
     { name: "NO", uid: "no" },
     { name: "EMPLOYEE NAME", uid: "employee_name" },
-    { name: "POSITION", uid: "position" },
     { name: "ATTENDANCE DATE", uid: "attendance_date" },
-    { name: "STATUS", uid: "status" },
+    { name: "CHECK-IN TIME", uid: "time" },
 ];
 
 const TableAttendanceData: React.FC = () => {
@@ -49,23 +47,10 @@ const TableAttendanceData: React.FC = () => {
             time: date.toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
+                second: '2-digit',
                 hour12: false
             })
         };
-    };
-
-    const getAttendanceStatus = (dateString: string) => {
-        const date = new Date(dateString);
-        const hour = date.getHours();
-
-        // Simple logic: before 9 AM = On Time, after = Late
-        if (hour < 9) {
-            return { status: "On Time", color: "success" as const };
-        } else if (hour < 10) {
-            return { status: "Late", color: "warning" as const };
-        } else {
-            return { status: "Very Late", color: "danger" as const };
-        }
     };
 
     const renderCell = React.useCallback((attendance: Attendance, columnKey: string, index: number) => {
@@ -78,33 +63,15 @@ const TableAttendanceData: React.FC = () => {
                 return (
                     <div className="flex flex-col">
                         <p className="text-sm font-semibold">{attendance.employee_name}</p>
-                        <p className="text-xs text-default-400">ID: {attendance.employee_id}</p>
+                        <p className="text-xs text-default-400">{attendance.position}</p>
                     </div>
-                );
-            case "position":
-                return (
-                    <p className="text-sm font-medium capitalize">{attendance.position}</p>
                 );
             case "attendance_date":
-                const { date, time } = formatDateTime(attendance.attendance_date);
-                return (
-                    <div className="flex flex-col">
-                        <p className="text-sm font-semibold">{date}</p>
-                        <p className="text-xs text-default-400">{time}</p>
-                    </div>
-                );
-            case "status":
-                const { status, color } = getAttendanceStatus(attendance.attendance_date);
-                return (
-                    <Chip
-                        className="capitalize"
-                        color={color}
-                        size="sm"
-                        variant="flat"
-                    >
-                        {status}
-                    </Chip>
-                );
+                const { date } = formatDateTime(attendance.attendance_date);
+                return <p className="text-sm">{date}</p>;
+            case "time":
+                const { time } = formatDateTime(attendance.attendance_date);
+                return <p className="text-sm font-mono">{time}</p>;
             default:
                 return cellValue;
         }
@@ -155,7 +122,7 @@ const TableAttendanceData: React.FC = () => {
                     {(column) => (
                         <TableColumn
                             key={column.uid}
-                            align={column.uid === "status" ? "center" : "start"}
+                            align="start"
                         >
                             {column.name}
                         </TableColumn>
