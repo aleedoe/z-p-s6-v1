@@ -196,3 +196,25 @@ def get_attendance_history(employee_id):
     }), 200
 
 
+
+def get_employee_detail(employee_id):
+    # Cek apakah employee ada
+    employee = Employee.query.get(employee_id)
+    if not employee:
+        return jsonify({
+            "message": f"Employee dengan id {employee_id} tidak ditemukan"
+        }), 404
+
+    # Format hasil data diri saja
+    employee_data = {
+        "employee_id": employee.id,
+        "nik": employee.nik,
+        "name": employee.name,
+        "gender": employee.gender,
+        "position": employee.position,
+        "email": employee.email,
+        "created_at": employee.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        "updated_at": employee.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    return jsonify(employee_data), 200
