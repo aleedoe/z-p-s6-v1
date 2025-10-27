@@ -1,6 +1,6 @@
 from flask import jsonify
 from sqlalchemy.exc import SQLAlchemyError
-from datetime import datetime
+from datetime import datetime, timedelta
 from ..models import db, Employee, EmployeeSchedule, WorkSchedule, Attendance, DailySchedule
 
 def get_employee_today_status(id_employee: int):
@@ -123,5 +123,76 @@ def get_employee_schedules(employee_id):
         "data": result
     }), 200
 
+
+
+def get_attendance_history(employee_id):
+    # Pastikan employee ada
+    employee = Employee.query.get(employee_id)
+    if not employee:
+        return jsonify({"message": f"Employee dengan id {employee_id} tidak ditemukan"}), 404
+
+    # Ambil waktu sekarang
+    now = datetime.now()
+
+    # Hitung rentang minggu ini (Senin - Minggu)
+    start_of_week = now - timedelta(days=now.weekday())  # Senin
+    end_of_week = start_of_week + timedelta(days=6)      # Minggu
+
+    # Hitung rentang bulan ini
+    start_of_month = datetime(now.year, now.month, 1)
+    if now.month == 12:
+        next_month = datetime(now.year + 1, 1, 1)
+    else:
+        next_month = datetime(now.year, now.month + 1, 1)
+    end_of_month = next_month - timedelta(seconds=1)
+
+    # Query absensi minggu ini
+    weekly_records = (
+        Attendance.query
+        .filter(
+            Attendance.employee_id == employee_id,
+            Attendance.date >= start_of_week,
+            Attendance.date <= end_of_week
+        )
+        .order_by(Attendance.date.asc())
+        .all()
+    )
+
+    # Query absensi bulan ini
+    monthly_records = (
+        Attendance.query
+        .filter(
+            Attendance.employee_id == employee_id,
+            Attendance.date >= start_of_month,
+            Attendance.date <= end_of_month
+        )
+        .order_by(Attendance.date.asc())
+        .all()
+    )
+
+    def serialize_record(record):
+        return {
+            "attendance_id": record.id,
+            "date": record.date.strftime("%Y-%m-%d"),
+            "created_at": record.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+
+    weekly_data = [serialize_record(r) for r in weekly_records]
+    monthly_data = [serialize_record(r) for r in monthly_records]
+
+    return jsonify({
+        "employee_id": employee_id,
+        "employee_name": employee.name,
+        "weekly_range": {
+            "start": start_of_week.strftime("%Y-%m-%d"),
+            "end": end_of_week.strftime("%Y-%m-%d")
+        },
+        "monthly_range": {
+            "start": start_of_month.strftime("%Y-%m-%d"),
+            "end": end_of_month.strftime("%Y-%m-%d")
+        },
+        "weekly_history": weekly_data,
+        "monthly_history": monthly_data
+    }), 200
 
 
