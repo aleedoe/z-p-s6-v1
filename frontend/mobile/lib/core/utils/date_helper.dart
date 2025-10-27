@@ -3,7 +3,24 @@ import 'package:intl/intl.dart';
 class DateHelper {
   // Format date to readable string
   static String formatDate(DateTime date) {
-    return DateFormat('dd MMMM yyyy', 'id_ID').format(date);
+    // Gunakan format manual untuk Indonesia
+    final months = [
+      '',
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
+    ];
+
+    return '${date.day} ${months[date.month]} ${date.year}';
   }
 
   // Format date to simple format

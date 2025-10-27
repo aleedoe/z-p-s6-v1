@@ -30,8 +30,8 @@ def create_app(config_name='development'):
             "origins": [
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
-                "http://localhost:58573",
-                "http://127.0.0.1:58573"
+                "http://localhost:50202",
+                "http://127.0.0.1:50202"
             ],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"]
@@ -43,9 +43,11 @@ def create_app(config_name='development'):
     jwt.init_app(app)
     
     # Register blueprints
-    from .routes import admin_bp, employee_bp
+    from .routes import admin_bp, employee_bp, auth_bp, attendance_bp
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(employee_bp, url_prefix='/api/employee')
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(attendance_bp, url_prefix='/api/attendance')
     
     # Import models
     # from .models import *

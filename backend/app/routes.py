@@ -30,9 +30,67 @@ admin_bp.route('/work-schedulesOP/<int:id_schedule>', methods=['DELETE'])(delete
 
 
 
-from .controllers.employee import get_employee_today_status, get_employee_schedules, get_attendance_history, get_employee_detail
+from .controllers.employee import get_employee_today_status, get_employee_schedules, get_attendance_history, get_employee_detail, login, register, verify_token, change_password, scan_qr_attendance, get_attendance_detail, delete_attendance, get_all_attendance_today
 
 employee_bp.route('/home/today-status/<int:id_employee>', methods=['GET'])(get_employee_today_status)
 employee_bp.route('/schedules/<int:employee_id>', methods=['GET'])(get_employee_schedules)
 employee_bp.route('/attendance-history/<int:employee_id>', methods=['GET'])(get_attendance_history)
 employee_bp.route('/detail/<int:employee_id>', methods=['GET'])(get_employee_detail)
+
+
+auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
+attendance_bp = Blueprint('attendance', __name__, url_prefix='/api/attendance')
+
+# =====================
+# AUTH ROUTES
+# =====================
+auth_bp.route('/login', methods=['POST'])(login)
+auth_bp.route('/register', methods=['POST'])(register)
+auth_bp.route('/verify', methods=['GET'])(verify_token)
+auth_bp.route('/change-password', methods=['POST'])(change_password)
+
+# # =====================
+# # EMPLOYEE ROUTES
+# # =====================
+# # Home status
+# employee_bp.route('/home/today-status/<int:id_employee>', methods=['GET'])(
+#     get_employee_today_status
+# )
+
+# # Schedules
+# employee_bp.route('/schedules/<int:employee_id>', methods=['GET'])(
+#     get_employee_schedules
+# )
+
+# # Attendance history
+# employee_bp.route('/attendance-history/<int:employee_id>', methods=['GET'])(
+#     get_attendance_history
+# )
+
+# # Employee detail
+# employee_bp.route('/detail/<int:employee_id>', methods=['GET'])(
+#     get_employee_detail
+# )
+
+# =====================
+# ATTENDANCE ROUTES
+# =====================
+# Scan QR for attendance
+attendance_bp.route('/scan', methods=['POST'])(
+    scan_qr_attendance
+)
+
+# Get attendance detail
+attendance_bp.route('/<int:attendance_id>', methods=['GET'])(
+    get_attendance_detail
+)
+
+# Delete attendance
+attendance_bp.route('/<int:attendance_id>', methods=['DELETE'])(
+    delete_attendance
+)
+
+# Get all attendance today (monitoring)
+attendance_bp.route('/today', methods=['GET'])(
+    get_all_attendance_today
+)
