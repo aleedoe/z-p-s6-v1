@@ -1,4 +1,5 @@
 import os
+from werkzeug.security import generate_password_hash
 from app import create_app, db
 from app.models import Admin
 
@@ -14,16 +15,17 @@ def create_admin(password, email, name="Administrator"):
             return
 
         # Buat admin baru
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         admin = Admin(
             name=name,
-            email=email
+            email=email,
+            password=hashed_password  # langsung isi ke kolom password
         )
-        admin.set_password(password)  # Set password menggunakan metode set_password
         
         db.session.add(admin)
         db.session.commit()
         
-        print(f"Admin {name} berhasil dibuat!")
+        print(f"✅ Admin {name} berhasil dibuat!")
         print(f"Email: {email}")
         print(f"Password: {password}")
 
@@ -31,6 +33,6 @@ if __name__ == "__main__":
     # Ganti dengan credential yang diinginkan
     create_admin(
         password="admin123",
-        email="admin@example.com",
+        email="admin@gmail.com",
         name="Admin Utama"
     )
