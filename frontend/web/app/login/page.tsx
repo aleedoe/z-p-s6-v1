@@ -29,17 +29,17 @@ export default function LoginPage() {
             })
 
             if (!res.ok) {
-                throw new Error("Invalid credentials")
+                throw new Error("Email atau password salah")
             }
 
             const data = await res.json()
 
-            // simpan token ke localStorage
+            // Simpan token dan user
             localStorage.setItem("token", data.access_token)
             localStorage.setItem("user", JSON.stringify(data))
 
-            // redirect ke dashboard
-            router.push("/dashboard")
+            router.push("/dashboard/employeeData")
+
         } catch (err: any) {
             setError(err.message || "Something went wrong")
         } finally {
