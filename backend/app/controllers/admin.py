@@ -4,7 +4,7 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
 from datetime import timedelta
-from ..models import db, Employee, DailySchedule, WorkSchedule, EmployeeSchedule, Attendance
+from ..models import db, Employee, DailySchedule, WorkSchedule, EmployeeSchedule, Attendance, Admin
 
 
 
