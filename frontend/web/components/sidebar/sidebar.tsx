@@ -89,7 +89,7 @@ export const SidebarWrapper = () => {
           </div>
           <div className={Sidebar.Footer()}>
             <Button color="danger" className="w-full" onPress={onOpen}>
-              Log Out
+              Keluar
             </Button>
           </div>
         </div>

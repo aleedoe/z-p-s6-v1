@@ -39,7 +39,7 @@ export const NavbarWrapper = ({ children }: Props) => {
             target={"_blank"}
           >
           </Link>
-          <DarkModeSwitch />
+          {/* <DarkModeSwitch /> */}
           <NavbarContent>
             <UserDropdown />
           </NavbarContent>
