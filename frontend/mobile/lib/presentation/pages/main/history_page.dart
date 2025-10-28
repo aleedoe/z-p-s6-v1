@@ -12,13 +12,23 @@ class HistoryPage extends StatefulWidget {
   State<HistoryPage> createState() => _HistoryPageState();
 }
 
-class _HistoryPageState extends State<HistoryPage> {
+class _HistoryPageState extends State<HistoryPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<HistoryProvider>().getHistory();
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _refreshData() async {
@@ -29,98 +39,165 @@ class _HistoryPageState extends State<HistoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text(AppStrings.history),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
-      body: Consumer<HistoryProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: Consumer<HistoryProvider>(
+                builder: (context, provider, _) {
+                  if (provider.isLoading) {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        color: AppColors.primary,
+                      ),
+                    );
+                  }
 
-          if (provider.errorMessage != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, color: AppColors.error, size: 64),
-                  const SizedBox(height: 16),
-                  Text(
-                    provider.errorMessage!,
-                    style: TextStyle(color: AppColors.error),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _refreshData,
-                    child: const Text('Coba Lagi'),
-                  ),
-                ],
+                  if (provider.errorMessage != null) {
+                    return _buildErrorState(provider.errorMessage!);
+                  }
+
+                  if (provider.history == null) {
+                    return const Center(child: Text('Tidak ada data'));
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: _refreshData,
+                    color: AppColors.primary,
+                    child: Column(
+                      children: [
+                        _buildPeriodSelector(provider),
+                        Expanded(child: _buildHistoryList(provider)),
+                      ],
+                    ),
+                  );
+                },
               ),
-            );
-          }
-
-          if (provider.history == null) {
-            return const Center(child: Text('Tidak ada data'));
-          }
-
-          return RefreshIndicator(
-            onRefresh: _refreshData,
-            child: Column(
-              children: [
-                _buildPeriodSelector(provider),
-                Expanded(child: _buildHistoryList(provider)),
-              ],
             ),
-          );
-        },
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.history_rounded, color: Colors.white, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppStrings.history,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              Text(
+                'Riwayat kehadiran Anda',
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildPeriodSelector(HistoryProvider provider) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      margin: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Row(
         children: [
           Expanded(
-            child: ElevatedButton(
-              onPressed: provider.showWeekly
-                  ? null
-                  : () => provider.toggleView(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: provider.showWeekly
-                    ? AppColors.primary
-                    : Colors.grey[300],
-                foregroundColor: provider.showWeekly
-                    ? Colors.white
-                    : Colors.black,
-                elevation: provider.showWeekly ? 2 : 0,
-              ),
-              child: const Text('Mingguan'),
+            child: _buildPeriodButton(
+              label: 'Mingguan',
+              isSelected: provider.showWeekly,
+              onTap: () {
+                if (!provider.showWeekly) {
+                  provider.toggleView();
+                }
+              },
             ),
           ),
-          const SizedBox(width: 12),
           Expanded(
-            child: ElevatedButton(
-              onPressed: !provider.showWeekly
-                  ? null
-                  : () => provider.toggleView(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: !provider.showWeekly
-                    ? AppColors.primary
-                    : Colors.grey[300],
-                foregroundColor: !provider.showWeekly
-                    ? Colors.white
-                    : Colors.black,
-                elevation: !provider.showWeekly ? 2 : 0,
-              ),
-              child: const Text('Bulanan'),
+            child: _buildPeriodButton(
+              label: 'Bulanan',
+              isSelected: !provider.showWeekly,
+              onTap: () {
+                if (provider.showWeekly) {
+                  provider.toggleView();
+                }
+              },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPeriodButton({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              color: isSelected ? Colors.white : AppColors.textSecondary,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -129,53 +206,186 @@ class _HistoryPageState extends State<HistoryPage> {
     final history = provider.currentHistory;
 
     if (history.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.history_outlined,
-              size: 64,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Tidak ada riwayat absensi',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
-            ),
-          ],
-        ),
-      );
+      return _buildEmptyState();
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
       itemCount: history.length,
       itemBuilder: (context, index) {
         final attendance = history[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: AppColors.success.withOpacity(0.1),
-              child: Icon(Icons.check_circle, color: AppColors.success),
-            ),
-            title: Text(
-              DateHelper.formatSimpleDate(DateTime.parse(attendance.date)),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              DateHelper.formatApiDateTime(attendance.createdAt),
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-            ),
-            trailing: Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: AppColors.textSecondary,
-            ),
+        return _buildHistoryCard(attendance, index);
+      },
+    );
+  }
+
+  Widget _buildHistoryCard(dynamic attendance, int index) {
+    return TweenAnimationBuilder(
+      duration: Duration(milliseconds: 300 + (index * 50)),
+      tween: Tween<double>(begin: 0, end: 1),
+      builder: (context, double value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 20 * (1 - value)),
+            child: child,
           ),
         );
       },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: AppColors.softShadow,
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: AppColors.successGradient,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.check_circle_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    DateHelper.formatSimpleDate(
+                      DateTime.parse(attendance.date),
+                    ),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time_rounded,
+                        size: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        DateHelper.formatApiDateTime(attendance.createdAt),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
+              color: AppColors.textTertiary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.error.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline_rounded,
+                color: AppColors.error,
+                size: 64,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Oops!',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _refreshData,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 14,
+                ),
+              ),
+              child: const Text('Coba Lagi'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.history_outlined,
+              size: 64,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Belum Ada Riwayat',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Riwayat absensi Anda akan muncul di sini',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          ),
+        ],
+      ),
     );
   }
 }
