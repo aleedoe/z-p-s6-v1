@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mobile/presentation/providers/qr_provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/colors.dart';
-import '../../../core/constants/strings.dart';
+import '../../../../core/constants/colors.dart';
+import '../../../../core/constants/strings.dart';
 
 class ScanQrPage extends StatefulWidget {
   const ScanQrPage({super.key});
