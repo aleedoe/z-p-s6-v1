@@ -12,20 +12,27 @@ class ScanQrPage extends StatefulWidget {
   State<ScanQrPage> createState() => _ScanQrPageState();
 }
 
-class _ScanQrPageState extends State<ScanQrPage> {
+class _ScanQrPageState extends State<ScanQrPage>
+    with SingleTickerProviderStateMixin {
   MobileScannerController? _controller;
   bool _isScanned = false;
+  late AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
     _controller = MobileScannerController();
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
     context.read<QrProvider>().startScanning();
   }
 
   @override
   void dispose() {
     _controller?.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -42,7 +49,6 @@ class _ScanQrPageState extends State<ScanQrPage> {
       _isScanned = true;
     });
 
-    // Stop the camera
     await _controller?.stop();
 
     if (!mounted) return;
@@ -54,7 +60,7 @@ class _ScanQrPageState extends State<ScanQrPage> {
 
     if (success) {
       _showResultDialog(
-        title: 'Berhasil',
+        title: 'Berhasil!',
         message: qrProvider.successMessage ?? AppStrings.scanSuccess,
         isSuccess: true,
       );
@@ -75,33 +81,68 @@ class _ScanQrPageState extends State<ScanQrPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              isSuccess ? Icons.check_circle : Icons.error,
-              color: isSuccess ? AppColors.success : AppColors.error,
-            ),
-            const SizedBox(width: 8),
-            Text(title),
-          ],
-        ),
-        content: Text(message),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Go back to home
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isSuccess
-                  ? AppColors.success
-                  : AppColors.primary,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('OK'),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: isSuccess
+                      ? AppColors.success.withOpacity(0.1)
+                      : AppColors.error.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isSuccess ? Icons.check_circle_rounded : Icons.error_rounded,
+                  color: isSuccess ? AppColors.success : AppColors.error,
+                  size: 64,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isSuccess
+                        ? AppColors.success
+                        : AppColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -110,18 +151,10 @@ class _ScanQrPageState extends State<ScanQrPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text(AppStrings.scanAttendance),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
       body: Stack(
         children: [
           MobileScanner(controller: _controller, onDetect: _handleBarcode),
+          _buildTopBar(),
           _buildScannerOverlay(),
           _buildInstructions(),
         ],
@@ -129,65 +162,132 @@ class _ScanQrPageState extends State<ScanQrPage> {
     );
   }
 
-  Widget _buildScannerOverlay() {
-    return Container(
-      decoration: BoxDecoration(color: Colors.black.withOpacity(0.5)),
-      child: Stack(
-        children: [
-          Center(
-            child: Container(
-              width: 250,
-              height: 250,
+  Widget _buildTopBar() {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            Container(
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.primary, width: 3),
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.black.withOpacity(0.5),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                color: Colors.white,
+                iconSize: 24,
+                onPressed: () => Navigator.pop(context),
               ),
             ),
-          ),
-          // Corners
-          Positioned(
-            left: MediaQuery.of(context).size.width / 2 - 125,
-            top: MediaQuery.of(context).size.height / 2 - 125,
-            child: _buildCorner(true, true),
-          ),
-          Positioned(
-            right: MediaQuery.of(context).size.width / 2 - 125,
-            top: MediaQuery.of(context).size.height / 2 - 125,
-            child: _buildCorner(false, true),
-          ),
-          Positioned(
-            left: MediaQuery.of(context).size.width / 2 - 125,
-            bottom: MediaQuery.of(context).size.height / 2 - 125,
-            child: _buildCorner(true, false),
-          ),
-          Positioned(
-            right: MediaQuery.of(context).size.width / 2 - 125,
-            bottom: MediaQuery.of(context).size.height / 2 - 125,
-            child: _buildCorner(false, false),
-          ),
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.qr_code_scanner_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      AppStrings.scanAttendance,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildCorner(bool isLeft, bool isTop) {
-    return Container(
-      width: 30,
-      height: 30,
-      decoration: BoxDecoration(
-        border: Border(
-          left: isLeft
-              ? BorderSide(color: AppColors.accent, width: 4)
-              : BorderSide.none,
-          right: !isLeft
-              ? BorderSide(color: AppColors.accent, width: 4)
-              : BorderSide.none,
-          top: isTop
-              ? BorderSide(color: AppColors.accent, width: 4)
-              : BorderSide.none,
-          bottom: !isTop
-              ? BorderSide(color: AppColors.accent, width: 4)
-              : BorderSide.none,
+  Widget _buildScannerOverlay() {
+    return Center(
+      child: Container(
+        width: 280,
+        height: 280,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Stack(
+          children: [
+            // Animated pulse effect
+            AnimatedBuilder(
+              animation: _pulseController,
+              builder: (context, child) {
+                return Opacity(
+                  opacity: 0.3 * _pulseController.value,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.primary, width: 3),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            // Corners
+            _buildCornerDecoration(Alignment.topLeft, true, true),
+            _buildCornerDecoration(Alignment.topRight, false, true),
+            _buildCornerDecoration(Alignment.bottomLeft, true, false),
+            _buildCornerDecoration(Alignment.bottomRight, false, false),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCornerDecoration(Alignment alignment, bool isLeft, bool isTop) {
+    return Align(
+      alignment: alignment,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          border: Border(
+            left: isLeft
+                ? BorderSide(color: AppColors.primary, width: 5)
+                : BorderSide.none,
+            right: !isLeft
+                ? BorderSide(color: AppColors.primary, width: 5)
+                : BorderSide.none,
+            top: isTop
+                ? BorderSide(color: AppColors.primary, width: 5)
+                : BorderSide.none,
+            bottom: !isTop
+                ? BorderSide(color: AppColors.primary, width: 5)
+                : BorderSide.none,
+          ),
+          borderRadius: BorderRadius.only(
+            topLeft: isLeft && isTop ? const Radius.circular(24) : Radius.zero,
+            topRight: !isLeft && isTop
+                ? const Radius.circular(24)
+                : Radius.zero,
+            bottomLeft: isLeft && !isTop
+                ? const Radius.circular(24)
+                : Radius.zero,
+            bottomRight: !isLeft && !isTop
+                ? const Radius.circular(24)
+                : Radius.zero,
+          ),
         ),
       ),
     );
@@ -195,49 +295,100 @@ class _ScanQrPageState extends State<ScanQrPage> {
 
   Widget _buildInstructions() {
     return Positioned(
-      bottom: 50,
+      bottom: 80,
       left: 0,
       right: 0,
       child: Consumer<QrProvider>(
         builder: (context, provider, _) {
-          return Column(
-            children: [
-              if (provider.isProcessing)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Column(
-                    children: [
-                      CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          return Center(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: provider.isProcessing
+                  ? Container(
+                      key: const ValueKey('processing'),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 20,
                       ),
-                      SizedBox(height: 12),
-                      Text(
-                        'Memproses absensi...',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.95),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.4),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'Arahkan kamera ke QR Code',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                ),
-            ],
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 32,
+                            height: 32,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 3,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Memproses absensi...',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Container(
+                      key: const ValueKey('instruction'),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 20,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.qr_code_2_rounded,
+                            color: Colors.white,
+                            size: 40,
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Arahkan kamera ke QR Code',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Pastikan QR Code berada di dalam frame',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
           );
         },
       ),
