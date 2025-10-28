@@ -1,8 +1,60 @@
 from flask import jsonify, request
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_jwt_extended import create_access_token
+from datetime import timedelta
 from ..models import db, Employee, DailySchedule, WorkSchedule, EmployeeSchedule, Attendance
+
+
+
+def admin_login():
+    """
+    Endpoint login untuk admin
+    POST /admin/login
+    Body: { "email": "...", "password": "..." }
+    """
+    try:
+        data = request.get_json()
+
+        # Validasi input
+        if not data or not data.get("email") or not data.get("password"):
+            return jsonify({"message": "Email dan password harus diisi"}), 400
+
+        email = data.get("email")
+        password = data.get("password")
+
+        # Cari admin berdasarkan email
+        admin = Admin.query.filter_by(email=email).first()
+
+        if not admin:
+            return jsonify({"message": "Email atau password salah"}), 401
+
+        # Verifikasi password
+        if not check_password_hash(admin.password, password):
+            return jsonify({"message": "Email atau password salah"}), 401
+
+        # Generate JWT token dengan masa berlaku 7 hari
+        access_token = create_access_token(
+            identity={"id": admin.id, "role": "admin"},
+            expires_delta=timedelta(days=7)
+        )
+
+        # Return data admin + token
+        return jsonify({
+            "message": "Login berhasil",
+            "access_token": access_token,
+            "id": admin.id,
+            "name": admin.name,
+            "email": admin.email
+        }), 200
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"message": "Database error", "error": str(e)}), 500
+
+    except Exception as e:
+        return jsonify({"message": "Internal server error", "error": str(e)}), 500
 
 def get_all_employees():
     try:
