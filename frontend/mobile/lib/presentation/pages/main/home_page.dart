@@ -114,7 +114,7 @@ class _HomePageState extends State<HomePage>
                   delegate: SliverChildListDelegate([
                     _buildTodayStatusCard(),
                     const SizedBox(height: 20),
-                    _buildQuickActionsGrid(),
+                    // _buildQuickActionsGrid(),
                     const SizedBox(height: 100), // Space for FAB
                   ]),
                 ),
@@ -123,39 +123,39 @@ class _HomePageState extends State<HomePage>
           ),
         ),
       ),
-      floatingActionButton: ScaleTransition(
-        scale: CurvedAnimation(
-          parent: _fabAnimationController,
-          curve: Curves.easeOutBack,
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: FloatingActionButton.extended(
-            onPressed: _navigateToScan,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            icon: const Icon(Icons.qr_code_scanner_rounded, size: 28),
-            label: const Text(
-              'Scan Absensi',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.3,
-              ),
-            ),
-          ),
-        ),
-      ),
+      // floatingActionButton: ScaleTransition(
+      //   scale: CurvedAnimation(
+      //     parent: _fabAnimationController,
+      //     curve: Curves.easeOutBack,
+      //   ),
+      //   child: Container(
+      //     decoration: BoxDecoration(
+      //       gradient: AppColors.primaryGradient,
+      //       borderRadius: BorderRadius.circular(20),
+      //       boxShadow: [
+      //         BoxShadow(
+      //           color: AppColors.primary.withOpacity(0.4),
+      //           blurRadius: 20,
+      //           offset: const Offset(0, 8),
+      //         ),
+      //       ],
+      //     ),
+      //     child: FloatingActionButton.extended(
+      //       onPressed: _navigateToScan,
+      //       backgroundColor: Colors.transparent,
+      //       elevation: 0,
+      //       icon: const Icon(Icons.qr_code_scanner_rounded, size: 28),
+      //       label: const Text(
+      //         'Scan Absensi',
+      //         style: TextStyle(
+      //           fontSize: 15,
+      //           fontWeight: FontWeight.w600,
+      //           letterSpacing: 0.3,
+      //         ),
+      //       ),
+      //     ),
+      //   ),
+      // ),
     );
   }
 
@@ -489,86 +489,86 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildQuickActionsGrid() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 16),
-          child: Text(
-            'Menu Lainnya',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(
-                icon: Icons.schedule_rounded,
-                title: 'Jadwal',
-                subtitle: 'Lihat jadwal shift',
-                color: AppColors.info,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildActionCard(
-                icon: Icons.history_rounded,
-                title: 'Riwayat',
-                subtitle: 'Histori absensi',
-                color: AppColors.success,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+  // Widget _buildQuickActionsGrid() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Padding(
+  //         padding: const EdgeInsets.only(left: 4, bottom: 16),
+  //         child: Text(
+  //           'Menu Lainnya',
+  //           style: TextStyle(
+  //             fontSize: 18,
+  //             fontWeight: FontWeight.bold,
+  //             color: AppColors.textPrimary,
+  //           ),
+  //         ),
+  //       ),
+  //       Row(
+  //         children: [
+  //           Expanded(
+  //             child: _buildActionCard(
+  //               icon: Icons.schedule_rounded,
+  //               title: 'Jadwal',
+  //               subtitle: 'Lihat jadwal shift',
+  //               color: AppColors.info,
+  //             ),
+  //           ),
+  //           const SizedBox(width: 16),
+  //           Expanded(
+  //             child: _buildActionCard(
+  //               icon: Icons.history_rounded,
+  //               title: 'Riwayat',
+  //               subtitle: 'Histori absensi',
+  //               color: AppColors.success,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ],
+  //   );
+  // }
 
-  Widget _buildActionCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: AppColors.softShadow,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildActionCard({
+  //   required IconData icon,
+  //   required String title,
+  //   required String subtitle,
+  //   required Color color,
+  // }) {
+  //   return Container(
+  //     padding: const EdgeInsets.all(20),
+  //     decoration: BoxDecoration(
+  //       color: AppColors.surface,
+  //       borderRadius: BorderRadius.circular(20),
+  //       boxShadow: AppColors.softShadow,
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Container(
+  //           padding: const EdgeInsets.all(12),
+  //           decoration: BoxDecoration(
+  //             color: color.withOpacity(0.1),
+  //             borderRadius: BorderRadius.circular(12),
+  //           ),
+  //           child: Icon(icon, color: color, size: 24),
+  //         ),
+  //         const SizedBox(height: 12),
+  //         Text(
+  //           title,
+  //           style: TextStyle(
+  //             fontSize: 16,
+  //             fontWeight: FontWeight.w600,
+  //             color: AppColors.textPrimary,
+  //           ),
+  //         ),
+  //         const SizedBox(height: 4),
+  //         Text(
+  //           subtitle,
+  //           style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 }
