@@ -22,8 +22,8 @@ const ModalAttendanceQr: React.FC<ModalAttendanceQrProps> = ({
     const [qrData, setQrData] = useState<string>("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [timeLeft, setTimeLeft] = useState<number>(0);
-    const [autoRefresh, setAutoRefresh] = useState(true);
+    // const [timeLeft, setTimeLeft] = useState<number>(0);
+    // const [autoRefresh, setAutoRefresh] = useState(true);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const autoRefreshRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -39,33 +39,33 @@ const ModalAttendanceQr: React.FC<ModalAttendanceQrProps> = ({
         return () => cleanup();
     }, [isOpen, schedule]);
 
-    // Countdown timer
-    useEffect(() => {
-        if (timeLeft > 0) {
-            timerRef.current = setInterval(() => {
-                setTimeLeft(prev => {
-                    if (prev <= 1) {
-                        // Auto refresh when expired
-                        if (autoRefresh && isOpen && schedule) {
-                            generateQr();
-                        }
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
+    // // Countdown timer
+    // useEffect(() => {
+    //     if (timeLeft > 0) {
+    //         timerRef.current = setInterval(() => {
+    //             setTimeLeft(prev => {
+    //                 if (prev <= 1) {
+    //                     // Auto refresh when expired
+    //                     if (autoRefresh && isOpen && schedule) {
+    //                         generateQr();
+    //                     }
+    //                     return 0;
+    //                 }
+    //                 return prev - 1;
+    //             });
+    //         }, 1000);
 
-            return () => {
-                if (timerRef.current) {
-                    clearInterval(timerRef.current);
-                }
-            };
-        }
-    }, [timeLeft, autoRefresh, isOpen, schedule]);
+    //         return () => {
+    //             if (timerRef.current) {
+    //                 clearInterval(timerRef.current);
+    //             }
+    //         };
+    //     }
+    // }, [timeLeft, autoRefresh, isOpen, schedule]);
 
     const cleanup = () => {
         setQrData("");
-        setTimeLeft(0);
+        // setTimeLeft(0);
         setError(null);
         if (timerRef.current) {
             clearInterval(timerRef.current);
@@ -86,7 +86,7 @@ const ModalAttendanceQr: React.FC<ModalAttendanceQrProps> = ({
             
             const response = await workScheduleService.getQrCode(schedule.id);
             setQrData(response.qr_token);
-            setTimeLeft(response.expires_in);
+            // setTimeLeft(response.expires_in);
             
         } catch (err: any) {
             const errorMessage = err.response?.data?.message || err.message || "Failed to generate QR Code";
@@ -162,7 +162,7 @@ const ModalAttendanceQr: React.FC<ModalAttendanceQrProps> = ({
                                         />
                                     </div>
                                     
-                                    <div className="text-center space-y-2">
+                                    {/* <div className="text-center space-y-2">
                                         <div className="flex items-center gap-2 justify-center text-sm text-default-500">
                                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -194,7 +194,7 @@ const ModalAttendanceQr: React.FC<ModalAttendanceQrProps> = ({
                                         <label htmlFor="autoRefresh" className="text-sm text-default-600 cursor-pointer">
                                             Refresh otomatis saat expired
                                         </label>
-                                    </div>
+                                    </div> */}
                                 </div>
                             ) : (
                                 <div className="h-[280px] flex items-center justify-center">
