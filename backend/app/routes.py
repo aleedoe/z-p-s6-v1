@@ -1,5 +1,8 @@
 from flask import Blueprint
 from .controllers.admin import get_all_employees, get_employee_by_id, create_employee, update_employee, delete_employee, get_all_work_schedules, get_work_schedule_by_id, get_all_attendance, get_attendance_by_id, get_available_schedules_for_employee, add_employee_schedule, update_employee_schedule, delete_employee_schedule, get_all_work_schedulesOP, get_work_schedule_by_idOP, create_work_scheduleOP, update_work_scheduleOP, delete_work_scheduleOP, admin_login
+
+from .controllers.qr_attendance import generate_qr_token, scan_qr_attendance
+
 admin_bp = Blueprint('admin', __name__)
 employee_bp = Blueprint('employee', __name__)
 
@@ -27,11 +30,12 @@ admin_bp.route('/work-schedulesOP', methods=['POST'])(create_work_scheduleOP)
 admin_bp.route('/work-schedulesOP/<int:id_schedule>', methods=['PUT'])(update_work_scheduleOP)
 admin_bp.route('/work-schedulesOP/<int:id_schedule>', methods=['DELETE'])(delete_work_scheduleOP)
 
+admin_bp.route('/work-schedulesOP/<int:schedule_id>/qr', methods=['POST'])(generate_qr_token)
 
 
 
 
-from .controllers.employee import get_employee_today_status, get_employee_schedules, get_attendance_history, get_employee_detail, login, register, verify_token, change_password, scan_qr_attendance, get_attendance_detail, delete_attendance, get_all_attendance_today
+from .controllers.employee import get_employee_today_status, get_employee_schedules, get_attendance_history, get_employee_detail, login, register, verify_token, change_password, get_attendance_detail, delete_attendance, get_all_attendance_today
 
 employee_bp.route('/home/today-status/<int:id_employee>', methods=['GET'])(get_employee_today_status)
 employee_bp.route('/schedules/<int:employee_id>', methods=['GET'])(get_employee_schedules)

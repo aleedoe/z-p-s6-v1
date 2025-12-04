@@ -9,6 +9,7 @@ import { WorkSchedule, WorkScheduleDetailResponse } from "@/types/api/workSchedu
 import { workScheduleService } from "@/services/workSchedule.service";
 import ModalWorkSchedule from "./modalEditWorkSchedule";
 import ModalDeleteConfirm from "./modalDeleteConfirm";
+import ModalAttendanceQr from "./modalAttendanceQr";
 import { ReportsIcon } from "@/components/icons/sidebar/reports-icon";
 
 const columns = [
@@ -99,7 +100,10 @@ const TableWorkSchedule: React.FC = () => {
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [scheduleToDelete, setScheduleToDelete] = useState<WorkSchedule | null>(null);
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    
+    // States for Attendance Modal
+    const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+    const [selectedAttendanceSchedule, setSelectedAttendanceSchedule] = useState<WorkSchedule | null>(null);
 
     useEffect(() => {
         fetchSchedules();
@@ -154,8 +158,8 @@ const TableWorkSchedule: React.FC = () => {
     };
 
     const handleAttendance = (schedule: WorkSchedule) => {
-        console.log("Attendance: ", schedule);
-        // aksi lain...
+        setSelectedAttendanceSchedule(schedule);
+        setIsAttendanceModalOpen(true);
     };
 
 
@@ -163,6 +167,11 @@ const TableWorkSchedule: React.FC = () => {
         setIsEditModalOpen(false);
         setSelectedSchedule(null);
     };
+
+    const handleAttendanceModalClose = () => {
+        setIsAttendanceModalOpen(false);
+        setSelectedAttendanceSchedule(null);
+    }
 
     const handleUpdateSuccess = () => {
         fetchSchedules();
@@ -292,6 +301,7 @@ const TableWorkSchedule: React.FC = () => {
                     )}
                 </TableBody>
             </Table>
+            
             <ModalWorkSchedule
                 isOpen={isEditModalOpen}
                 onClose={handleModalClose}
@@ -299,11 +309,18 @@ const TableWorkSchedule: React.FC = () => {
                 loading={loadingDetail}
                 onSuccess={handleUpdateSuccess}
             />
+            
             <ModalDeleteConfirm
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={confirmDelete}
                 scheduleName={scheduleToDelete?.name || ''}
+            />
+
+            <ModalAttendanceQr
+                isOpen={isAttendanceModalOpen}
+                onClose={handleAttendanceModalClose}
+                schedule={selectedAttendanceSchedule}
             />
         </>
     );

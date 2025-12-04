@@ -1,3 +1,4 @@
+// frontend/mobile/lib/presentation/pages/qr/scan_qr_page.dart
 import 'package:flutter/material.dart';
 import 'package:mobile/presentation/providers/qr_provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -45,10 +46,7 @@ class _ScanQrPageState extends State<ScanQrPage>
     final String? code = barcodes.first.rawValue;
     if (code == null || code.isEmpty) return;
 
-    setState(() {
-      _isScanned = true;
-    });
-
+    setState(() => _isScanned = true);
     await _controller?.stop();
 
     if (!mounted) return;
@@ -63,6 +61,7 @@ class _ScanQrPageState extends State<ScanQrPage>
         title: 'Berhasil!',
         message: qrProvider.successMessage ?? AppStrings.scanSuccess,
         isSuccess: true,
+        attendanceData: qrProvider.attendanceData,
       );
     } else {
       _showResultDialog(
@@ -77,6 +76,7 @@ class _ScanQrPageState extends State<ScanQrPage>
     required String title,
     required String message,
     required bool isSuccess,
+    Map<String, dynamic>? attendanceData,
   }) {
     showDialog(
       context: context,
@@ -88,6 +88,7 @@ class _ScanQrPageState extends State<ScanQrPage>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Icon
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -103,6 +104,8 @@ class _ScanQrPageState extends State<ScanQrPage>
                 ),
               ),
               const SizedBox(height: 24),
+              
+              // Title
               Text(
                 title,
                 style: TextStyle(
@@ -112,12 +115,60 @@ class _ScanQrPageState extends State<ScanQrPage>
                 ),
               ),
               const SizedBox(height: 12),
+              
+              // Message
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
               ),
+              
+              // Attendance details (if success)
+              if (isSuccess && attendanceData != null) ...[
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.success.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildDetailRow(
+                        'Nama',
+                        attendanceData['employee_name'] ?? '-',
+                      ),
+                      const SizedBox(height: 8),
+                      _buildDetailRow(
+                        'Jadwal',
+                        attendanceData['schedule_name'] ?? '-',
+                      ),
+                      const SizedBox(height: 8),
+                      _buildDetailRow(
+                        'Waktu',
+                        _formatDate(attendanceData['date']),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildDetailRow(
+                        'Status',
+                        attendanceData['status'] ?? '-',
+                        isStatus: true,
+                        status: attendanceData['status'],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              
               const SizedBox(height: 32),
+              
+              // Button
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -136,7 +187,10 @@ class _ScanQrPageState extends State<ScanQrPage>
                   ),
                   child: const Text(
                     'OK',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -145,6 +199,61 @@ class _ScanQrPageState extends State<ScanQrPage>
         ),
       ),
     );
+  }
+
+  Widget _buildDetailRow(String label, String value,
+      {bool isStatus = false, String? status}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        if (isStatus)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: status == 'On Time'
+                  ? AppColors.success.withOpacity(0.1)
+                  : AppColors.warning.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: status == 'On Time'
+                    ? AppColors.success
+                    : AppColors.warning,
+              ),
+            ),
+          )
+        else
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+      ],
+    );
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return '-';
+    try {
+      final date = DateTime.parse(dateStr);
+      return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return dateStr;
+    }
   }
 
   @override
@@ -228,7 +337,6 @@ class _ScanQrPageState extends State<ScanQrPage>
         ),
         child: Stack(
           children: [
-            // Animated pulse effect
             AnimatedBuilder(
               animation: _pulseController,
               builder: (context, child) {
@@ -243,8 +351,6 @@ class _ScanQrPageState extends State<ScanQrPage>
                 );
               },
             ),
-
-            // Corners
             _buildCornerDecoration(Alignment.topLeft, true, true),
             _buildCornerDecoration(Alignment.topRight, false, true),
             _buildCornerDecoration(Alignment.bottomLeft, true, false),
@@ -278,15 +384,12 @@ class _ScanQrPageState extends State<ScanQrPage>
           ),
           borderRadius: BorderRadius.only(
             topLeft: isLeft && isTop ? const Radius.circular(24) : Radius.zero,
-            topRight: !isLeft && isTop
-                ? const Radius.circular(24)
-                : Radius.zero,
-            bottomLeft: isLeft && !isTop
-                ? const Radius.circular(24)
-                : Radius.zero,
-            bottomRight: !isLeft && !isTop
-                ? const Radius.circular(24)
-                : Radius.zero,
+            topRight:
+                !isLeft && isTop ? const Radius.circular(24) : Radius.zero,
+            bottomLeft:
+                isLeft && !isTop ? const Radius.circular(24) : Radius.zero,
+            bottomRight:
+                !isLeft && !isTop ? const Radius.circular(24) : Radius.zero,
           ),
         ),
       ),

@@ -93,7 +93,6 @@ def get_all_employees():
         return jsonify({"error": str(e)}), 500
 
 
-
 def get_employee_by_id(id_employee: int):
     try:
         # Ambil data karyawan utama
@@ -229,8 +228,6 @@ def get_available_schedules_for_employee(id_employee: int):
         return jsonify({"error": str(e)}), 500
 
 
-
-
 def add_employee_schedule(id_employee):  # Tambahkan parameter ini
     try:
         data = request.get_json()
@@ -350,7 +347,6 @@ def update_employee_schedule(id_employee, id_employee_schedule):
         return jsonify({"error": str(e)}), 500
 
 
-
 def delete_employee_schedule(id_employee, id_employee_schedule):
     try:
         # --- Cek apakah employee ada ---
@@ -375,7 +371,6 @@ def delete_employee_schedule(id_employee, id_employee_schedule):
     except SQLAlchemyError as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
-
 
 
 def create_employee():
@@ -410,7 +405,6 @@ def create_employee():
     except SQLAlchemyError as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
-
 
 
 def update_employee(id_employee: int):
@@ -451,7 +445,6 @@ def update_employee(id_employee: int):
         return jsonify({"error": str(e)}), 500
 
 
-
 def delete_employee(id_employee: int):
     try:
         employee = Employee.query.get(id_employee)
@@ -467,7 +460,6 @@ def delete_employee(id_employee: int):
     except SQLAlchemyError as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
-
 
 
 def get_all_work_schedules():
@@ -536,7 +528,6 @@ def get_work_schedule_by_id(id_schedule: int):
         return jsonify({"error": str(e)}), 500
 
 
-
 def get_all_attendance():
     try:
         # Join tabel attendance dengan employee
@@ -573,7 +564,6 @@ def get_all_attendance():
         return jsonify({"error": str(e)}), 500
 
 
-
 def get_attendance_by_id(attendance_id: int):
     try:
         # Join attendance dengan employee, dan filter berdasarkan id attendance
@@ -606,8 +596,6 @@ def get_attendance_by_id(attendance_id: int):
     except SQLAlchemyError as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
-
-
 
 
 def get_all_work_schedulesOP():

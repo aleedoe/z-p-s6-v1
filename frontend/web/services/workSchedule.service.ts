@@ -33,6 +33,11 @@ class WorkScheduleService extends BaseService {
     async deleteById(id: number): Promise<{ message: string }> {
         return this.delete<{ message: string }>(`${this.endpoint}/${id}`);
     }
+
+        // New: Fetch QR Token for Attendance
+    async getQrCode(id: number): Promise<{ qr_token: string; expires_in: number; schedule_name: string }> {
+        return this.post<{ qr_token: string; expires_in: number; schedule_name: string }>(`${this.endpoint}/${id}/qr`);
+    }
 }
 
 export const workScheduleService = new WorkScheduleService();
