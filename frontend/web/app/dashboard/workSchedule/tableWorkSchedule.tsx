@@ -9,6 +9,7 @@ import { WorkSchedule, WorkScheduleDetailResponse } from "@/types/api/workSchedu
 import { workScheduleService } from "@/services/workSchedule.service";
 import ModalWorkSchedule from "./modalEditWorkSchedule";
 import ModalDeleteConfirm from "./modalDeleteConfirm";
+import { ReportsIcon } from "@/components/icons/sidebar/reports-icon";
 
 const columns = [
     { name: "NO", uid: "no" },
@@ -98,6 +99,7 @@ const TableWorkSchedule: React.FC = () => {
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [scheduleToDelete, setScheduleToDelete] = useState<WorkSchedule | null>(null);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     useEffect(() => {
         fetchSchedules();
@@ -151,6 +153,12 @@ const TableWorkSchedule: React.FC = () => {
         }
     };
 
+    const handleAttendance = (schedule: WorkSchedule) => {
+        console.log("Attendance: ", schedule);
+        // aksi lain...
+    };
+
+
     const handleModalClose = () => {
         setIsEditModalOpen(false);
         setSelectedSchedule(null);
@@ -186,6 +194,7 @@ const TableWorkSchedule: React.FC = () => {
             case "actions":
                 return (
                     <div className="relative flex justify-center gap-2">
+                        {/* Edit */}
                         <Tooltip content="Edit schedule">
                             <span
                                 className="text-lg text-default-400 cursor-pointer active:opacity-50"
@@ -194,12 +203,24 @@ const TableWorkSchedule: React.FC = () => {
                                 <EditIcon />
                             </span>
                         </Tooltip>
+
+                        {/* Delete */}
                         <Tooltip color="danger" content="Delete schedule">
                             <span
                                 className="text-lg text-danger cursor-pointer active:opacity-50"
                                 onClick={() => handleDelete(schedule)}
                             >
                                 <DeleteIcon />
+                            </span>
+                        </Tooltip>
+
+                        {/* Attendance */}
+                        <Tooltip color="primary" content="Make Attendance">
+                            <span
+                                className="text-lg text-primary cursor-pointer active:opacity-50"
+                                onClick={() => handleAttendance(schedule)}
+                            >
+                                <ReportsIcon />
                             </span>
                         </Tooltip>
                     </div>
