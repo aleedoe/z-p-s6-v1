@@ -57,7 +57,6 @@ def generate_qr_token(schedule_id: int):
         return jsonify({"error": str(e)}), 500
 
 
-# @jwt_required()
 def scan_qr_attendance():
     """
     Scan QR dan validasi untuk absensi
@@ -65,12 +64,31 @@ def scan_qr_attendance():
     Body: { "qr_data": "...", "employee_id": ... }
     """
     try:
+        # Validasi request content type
+        if not request.is_json:
+            return jsonify({"message": "Content-Type must be application/json"}), 400
+        
         data = request.get_json()
+        
+        # Validasi data tidak null
+        if not data:
+            return jsonify({"message": "Request body is required"}), 400
+        
         qr_data = data.get('qr_data')
         employee_id = data.get('employee_id')
         
+        # Log untuk debugging
+        print(f"Received data: qr_data={qr_data}, employee_id={employee_id}")
+        
+        # Validasi field required
         if not qr_data or not employee_id:
-            return jsonify({"message": "QR data dan employee ID harus diisi"}), 400
+            return jsonify({
+                "message": "QR data dan employee ID harus diisi",
+                "received": {
+                    "qr_data": qr_data,
+                    "employee_id": employee_id
+                }
+            }), 400
         
         # Validasi QR token exists dan belum expired
         if qr_data not in qr_tokens:
@@ -134,7 +152,10 @@ def scan_qr_attendance():
         # Check if current time is within tolerance window
         if not (earliest_time <= current_time <= latest_time):
             return jsonify({
-                "message": f"Waktu absensi tidak sesuai. Jadwal: {schedule_start.strftime('%H:%M')} (±{schedule.tolerance_minutes} menit)"
+                "message": f"Waktu absensi tidak sesuai. Jadwal: {schedule_start.strftime('%H:%M')} (±{schedule.tolerance_minutes} menit)",
+                "current_time": current_time.strftime('%H:%M'),
+                "schedule_time": schedule_start.strftime('%H:%M'),
+                "tolerance_window": f"{earliest_time.strftime('%H:%M')} - {latest_time.strftime('%H:%M')}"
             }), 400
         
         # Determine status (On Time / Late)
@@ -165,8 +186,12 @@ def scan_qr_attendance():
         
     except SQLAlchemyError as e:
         db.session.rollback()
+        print(f"Database error: {str(e)}")
         return jsonify({"message": "Database error", "error": str(e)}), 500
     except Exception as e:
+        print(f"Unexpected error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"message": "Internal server error", "error": str(e)}), 500
 
 

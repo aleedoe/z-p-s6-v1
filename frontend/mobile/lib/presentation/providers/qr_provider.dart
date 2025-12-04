@@ -20,6 +20,11 @@ class QrProvider with ChangeNotifier {
     BaseOptions(
       connectTimeout: ApiConfig.connectionTimeout,
       receiveTimeout: ApiConfig.receiveTimeout,
+      // Pastikan content type JSON
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
     ),
   );
 
@@ -47,23 +52,42 @@ class QrProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final token = await StorageHelper.getToken();
       final userId = await StorageHelper.getUserId();
 
-      if (token == null || userId == null) {
+      if (userId == null) {
         throw Exception('User not logged in');
       }
 
+      // Log untuk debugging
+      debugPrint('Submitting attendance...');
+      debugPrint('QR Data: $qrData');
+      debugPrint('User ID: $userId');
+      debugPrint('API URL: ${ApiConfig.scanAttendance}');
+
+      final requestData = {
+        'qr_data': qrData,
+        'employee_id': userId,
+      };
+
+      debugPrint('Request data: $requestData');
+
       final response = await _dio.post(
         ApiConfig.scanAttendance,
-        data: {
-          'qr_data': qrData,
-          'employee_id': userId,
-        },
+        data: requestData,
         options: Options(
-          headers: {'Authorization': 'Bearer $token'},
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          validateStatus: (status) {
+            // Accept all status codes to handle them manually
+            return status != null && status < 500;
+          },
         ),
       );
+
+      debugPrint('Response status: ${response.statusCode}');
+      debugPrint('Response data: ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         _successMessage = response.data['message'] ?? 'Absensi berhasil';
@@ -71,10 +95,26 @@ class QrProvider with ChangeNotifier {
         _isProcessing = false;
         notifyListeners();
         return true;
+      } else if (response.statusCode == 400) {
+        _errorMessage = response.data['message'] ?? 'Data tidak valid';
+        debugPrint('Received data: ${response.data['received']}');
+      } else if (response.statusCode == 403) {
+        _errorMessage = response.data['message'] ?? 'Anda tidak terdaftar di jadwal ini';
+      } else if (response.statusCode == 404) {
+        _errorMessage = 'Karyawan tidak ditemukan';
+      } else if (response.statusCode == 422) {
+        _errorMessage = 'Data yang dikirim tidak valid. Periksa format QR Code.';
+        debugPrint('422 Error - Invalid data format');
       } else {
-        throw Exception('Unexpected status code: ${response.statusCode}');
+        _errorMessage = response.data['message'] ?? 'Absensi gagal';
       }
     } on DioException catch (e) {
+      debugPrint('DioException occurred');
+      debugPrint('Error type: ${e.type}');
+      debugPrint('Error message: ${e.message}');
+      debugPrint('Response: ${e.response?.data}');
+      debugPrint('Status code: ${e.response?.statusCode}');
+
       // Handle specific error messages from backend
       if (e.response?.statusCode == 400) {
         _errorMessage = e.response?.data['message'] ?? 'QR Code tidak valid';
@@ -82,11 +122,17 @@ class QrProvider with ChangeNotifier {
         _errorMessage = e.response?.data['message'] ?? 'Anda tidak terdaftar di jadwal ini';
       } else if (e.response?.statusCode == 404) {
         _errorMessage = 'Karyawan tidak ditemukan';
+      } else if (e.response?.statusCode == 422) {
+        _errorMessage = 'Format data tidak valid. Pastikan QR Code benar.';
+      } else if (e.type == DioExceptionType.connectionTimeout) {
+        _errorMessage = 'Koneksi timeout. Periksa koneksi internet Anda.';
+      } else if (e.type == DioExceptionType.receiveTimeout) {
+        _errorMessage = 'Server tidak merespons. Coba lagi.';
+      } else if (e.type == DioExceptionType.badResponse) {
+        _errorMessage = e.response?.data['message'] ?? 'Server error. Coba lagi.';
       } else {
-        _errorMessage = e.response?.data['message'] ?? 'Absensi gagal. Silakan coba lagi.';
+        _errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi Anda.';
       }
-      debugPrint('Attendance error: ${e.message}');
-      debugPrint('Response: ${e.response?.data}');
     } catch (e) {
       _errorMessage = 'Terjadi kesalahan: ${e.toString()}';
       debugPrint('Unexpected error: $e');
